@@ -876,6 +876,77 @@ function classifyChordTokens(toks){
 }
 function expandTabs(s){ let out=''; for(const ch of s){ if(ch==='\t'){ const n=8-(out.length%8); out+=' '.repeat(n); } else out+=ch; } return out; }
 function isTabLine(s){ const t=s.trim(); return /^[eBGDAEbgda]?\s*[|:]?[-\d|hpbrsx\/\\~()\s.]{6,}$/.test(t) && (t.match(/-/g)||[]).length>=4; }
+
+/* ---------- Limpieza de texto copiado de páginas web ----------
+   Saca caracteres invisibles y los textos de menús/botones, y se queda con la
+   zona que más se parece a una canción (acordes, letra y tablaturas). */
+const JUNK_RE=/^(descargar|imprimir|compartir|guardar|favorit|comentari|ver m[aá]s|mostrar|ocultar|restablecer|principal|letra$|tabs?( pro)?$|tablaturas?$|cifrado$|simplificar|auto ?scroll|desplazamiento|transponer|tono:?$|afinaci[oó]n:?|aprend|videoclase|video ?lecci|enviar|corregir|denunciar|publicidad|anuncio|suscrib|iniciar sesi|registr|men[uú]$|buscar|inicio$|home$|siguiente|anterior|volver|cerrar|aceptar|cookies|pol[ií]tica|t[eé]rminos|copyright|©|todos los derechos|escuchar|reproducir|play$|\d+ (comentarios|visitas|vistas)|valorar|puntuar|calificaci[oó]n|opiniones|colabor|env[ií]anos|otras canciones|canciones de |acordes de |m[aá]s canciones|relacionad|popular|top \d|ranking)/i;
+function lineKind(l){
+  const t=l.trim(); if(!t) return 'blank';
+  if(isTabLine(l)) return 'tab';
+  if(classifyChordTokens(tokenizeChordLine(l))) return 'chords';
+  const lm=l.match(LABEL_RE); if(lm && lm[0].trim().length>2){ const rest=l.slice(lm[0].length).trim(); if(!rest || classifyChordTokens(tokenizeChordLine(rest))) return 'label'; }
+  if(/\[[^\]]+\]/.test(l)){ const cp=parseChordPro(l); if(cp.chords.length && cp.chords.every(c=>parseChord(c.c))) return 'chordpro'; }
+  if(t.length<45 && JUNK_RE.test(t)) return 'junk';
+  return 'text';
+}
+function cleanPasted(text){
+  let s=String(text||'').replace(/\r/g,'').replace(/[​-‍⁠﻿]/g,'').replace(/ /g,' ');
+  const lines=s.split('\n').map(expandTabs);
+  const kinds=lines.map(lineKind);
+  const songy=kinds.filter(k=>k==='chords'||k==='tab'||k==='chordpro').length;
+  if(songy<2) return lines.filter((l,i)=>kinds[i]!=='junk').join('\n'); // sin estructura clara: solo quitar menús
+  // zona de la canción: suma máxima (las líneas de canción suman, los menús restan)
+  const w=kinds.map((k,i)=>k==='chords'?4: k==='tab'?3: k==='chordpro'?4: k==='label'?2: k==='blank'?0: k==='junk'?-4 : (kinds[i-1]==='chords'||kinds[i+1]==='text'||kinds[i-1]==='text')?1:-1.5);
+  let best=-1e9, bs=0, be=0, cur=0, cs=0;
+  for(let i=0;i<w.length;i++){ if(cur<=0){ cur=w[i]; cs=i; } else cur+=w[i]; if(cur>best){ best=cur; bs=cs; be=i; } }
+  // conservar hasta 3 líneas cortas de encabezado (título, artista) justo antes de la zona
+  let hs=bs; let kept=0; for(let i=bs-1;i>=0 && kept<3 && bs-i<14;i--){ if(kinds[i]==='blank'||kinds[i]==='junk') continue; if(kinds[i]==='text' && lines[i].trim().length<90){ hs=i; kept++; } else break; }
+  // y lo que siga pegado al final si es letra
+  let ee=be; for(let i=be+1;i<lines.length;i++){ if(kinds[i]==='text'||kinds[i]==='blank') ee=i; else break; if(kinds[i]==='blank' && kinds[i+1]==='blank') break; }
+  return lines.slice(hs, ee+1).filter((l,i)=>kinds[hs+i]!=='junk').join('\n');
+}
+
+/* Texto "a doble espacio" (LaCuerda y otras páginas al copiar): cada par acordes+verso separado por
+   una línea en blanco y las estrofas por dos o más. Ahí la línea en blanco simple no corta la estrofa. */
+function undoubleSpace(lines){
+  const k=lines.map(l=>{ const t=l.trim(); if(!t) return 'b'; if(isTabLine(l)) return 'T'; if(classifyChordTokens(tokenizeChordLine(l))) return 'c'; return 't'; });
+  const runs=[]; for(let i=0;i<k.length;i++){ if(k[i]!=='b') continue; let j=i; while(j<k.length && k[j]==='b') j++; runs.push([i,j-i]); i=j-1; }
+  let pairSingles=0, multi=0;
+  for(const [i,n] of runs){ if(n>=2){ multi++; continue; } const prev=k[i-1], prev2=k[i-2], next=k[i+n]; if(prev==='t' && prev2==='c' && next==='c') pairSingles++; }
+  if(pairSingles<3 || !multi) return lines;
+  const singlesTotal=runs.filter(r=>r[1]===1).length; if(pairSingles<singlesTotal*0.5) return lines;
+  const out=[]; for(let i=0;i<lines.length;i++){ if(k[i]!=='b'){ out.push(lines[i]); continue; } let j=i; while(j<lines.length && k[j]==='b') j++; if(j-i>=2) out.push(''); i=j-1; }
+  return out;
+}
+/* ---------- Tablaturas: deducir el acorde de cada compás ---------- */
+const TAB_OPEN={e:64,B:59,G:55,D:50,A:45,E:40,b:59,g:55,d:50,a:45};
+function tabChords(tabText){
+  const rows=tabText.split('\n').map(l=>l.replace(/\s+$/,'')).filter(l=>/[-|]{3,}/.test(l));
+  if(rows.length<4) return [];
+  // grupos de 6 renglones (o los que haya) = un sistema de tablatura
+  const out=[]; const blocks=[]; for(let i=0;i<rows.length;i+=6) blocks.push(rows.slice(i,i+6));
+  for(const blk of blocks){
+    const opens=blk.map((r,k)=>{ const m=r.trim().match(/^([eBGDAEbgda])\s*[|:]/); if(m) return TAB_OPEN[m[1]]+(m[1]==='E' && k===0 && blk.length>=6?24:0); return [64,59,55,50,45,40][k]; });
+    if(blk.length>=6 && /^E/.test(blk[0].trim()) && /^E/.test(blk[5].trim())) opens[0]=64; // la primera E arriba es la aguda
+    const len=Math.max(...blk.map(r=>r.length));
+    const ref=blk[0]; const bars=[]; let start=0;
+    for(let c=0;c<len;c++){ if(blk.every(r=>r[c]==='|'||r[c]===undefined) && c>0){ if(c-start>2) bars.push([start,c]); start=c+1; } }
+    if(len-start>2) bars.push([start,len]);
+    for(const [a,b] of bars){
+      const pcw=new Array(12).fill(0); let notes=0, lowest=null;
+      blk.forEach((r,k)=>{ let c=a; while(c<b){ const m=r.slice(c,b).match(/^\d{1,2}/); if(m){ const midi=opens[k]+(+m[0]); pcw[midi%12]+= 1 + (5-k)*0.25; if(lowest==null||midi<lowest.m) lowest={m:midi}; notes++; c+=m[0].length; } else c++; } });
+      if(notes<2){ continue; }
+      if(lowest) pcw[lowest.m%12]+=1.5;
+      let bestN=null, bestS=-1;
+      for(let r=0;r<12;r++) for(const [suf,iv] of [['',[0,4,7]],['m',[0,3,7]],['7',[0,4,7,10]],['m7',[0,3,7,10]]]){
+        let s=0; for(let p=0;p<12;p++){ const inC=iv.some(i=>(r+i)%12===p); s+= inC? pcw[p] : -0.7*pcw[p]; }
+        s+= pcw[r]*0.6 - (iv.length>3?0.4:0); if(s>bestS){ bestS=s; bestN=SH[r]+suf; } }
+      if(bestN && out[out.length-1]!==bestN) out.push(bestN);
+    }
+  }
+  return out;
+}
 function parseChordPro(line){
   const chords=[]; let lyric=''; const re=/\[([^\]]+)\]/g; let last=0, m;
   while((m=re.exec(line))){ lyric+=line.slice(last,m.index); chords.push({i:lyric.length, c:m[1].trim()}); last=re.lastIndex; }
@@ -884,7 +955,8 @@ function parseChordPro(line){
 }
 /* Texto "acordes sobre letra" (LaCuerda, CifraClub, Satori, ChordPro) -> modelo */
 function parseSongText(text){
-  const raw=String(text).replace(/\r/g,'').replace(/ /g,' ').replace(/ﬁ/g,'fi').replace(/ﬂ/g,'fl').split('\n').map(expandTabs);
+  let raw=cleanPasted(String(text).replace(/\ufb01/g,'fi').replace(/\ufb02/g,'fl')).split('\n').map(expandTabs);
+  raw=undoubleSpace(raw);
   const meta={}; const sections=[]; let sec={label:'',lines:[]};
   const pushSec=()=>{ if(sec.lines.length||sec.label) sections.push(sec); sec={label:'',lines:[]}; };
   let pending=null; // línea de acordes esperando letra
@@ -901,6 +973,8 @@ function parseSongText(text){
     if(isTabLine(line)){ flush(); const last=sec.lines[sec.lines.length-1]; if(last&&last.tab) last.tab+='\n'+line; else sec.lines.push({tab:line}); continue; }
     if(/\[[^\]]+\]/.test(line) && !/^\s*\[[^\]]+\]\s*$/.test(line)){
       const cp=parseChordPro(line); if(cp.chords.length && cp.chords.every(c=>parseChord(c.c))){ flush(); sec.lines.push({lyric:cp.lyric, chords:cp.chords}); continue; } }
+    // títulos de sección largos: "Primera parte y segunda:", "Estrofa 2 (igual a la 1):"
+    if(/^[^:]{2,40}:$/.test(tr) && /intro|estrofa|estribillo|coro|parte|puente|final|solo|riff|interludio|verso|instrumental/i.test(tr) && !classifyChordTokens(tokenizeChordLine(tr.slice(0,-1)))){ flush(); if(sec.lines.length) pushSec(); sec.label=cap(tr.slice(0,-1)); continue; }
     // etiqueta de sección, con o sin acordes detrás
     const lm=line.match(LABEL_RE);
     if(lm && lm[0].trim().length>2){
@@ -926,6 +1000,10 @@ function parseSongText(text){
   // recortar sangría común
   for(const s of sections) for(const l of s.lines){ if(l.lyric!=null && l.lyric!==''){ const lead=l.lyric.match(/^ */)[0].length; const minC=l.chords.length?Math.min(...l.chords.map(c=>c.i)):lead; const cut=Math.min(lead,minC); if(cut>0){ l.lyric=l.lyric.slice(cut); l.chords.forEach(c=>c.i-=cut); } }
     else if(l.co && l.chords.length){ const cut=Math.min(...l.chords.map(c=>c.i)); l.chords.forEach(c=>c.i-=cut); } }
+  // tablaturas sin acordes escritos: se deducen del riff y se muestran arriba
+  for(const s of sections){ for(let k=0;k<s.lines.length;k++){ const l=s.lines[k]; if(!l.tab) continue;
+    const prev=s.lines[k-1]; if(prev && prev.co && prev.chords.length) continue;
+    const ch=tabChords(l.tab); if(ch.length){ let p=0; s.lines.splice(k,0,{lyric:'', co:true, fromTab:true, chords:ch.map(c=>{ const o={i:p,c,inf:true}; p+=c.length+2; return o; })}); k++; } } }
   return {meta, sections:sections.filter(s=>s.lines.length||s.label)};
 }
 function cap(s){ s=String(s||'').trim(); return s? s[0].toUpperCase()+s.slice(1).toLowerCase() : s; }
@@ -948,8 +1026,10 @@ function splitHeader(sections, onlyMeta){
   texts.forEach(t=>{ const c=capoFrom(t); if(c) out.capo=c; });
   const credit=texts.join(' ').match(/(?:letra|m[uú]sica)[^:]{0,20}:\s*([^;)\n]+)/i);
   const clean=texts.filter(t=>!META_RE.test(t));
-  out.title=titleCase((clean[0]||'').replace(/\s*\(.*?\)\s*$/,''));
-  out.artist=credit? credit[1].trim() : (clean[1]||'').replace(/^\(|\)$/g,'').trim();
+  const ptm=texts.map(t=>pageTitleMeta(t)).find(Boolean);
+  if(ptm && !onlyMeta){ out.title=ptm.title; out.artist=ptm.artist; }
+  else { out.title=titleCase((clean[0]||'').replace(/\s*\(.*?\)\s*$/,''));
+    out.artist=credit? credit[1].trim() : (clean[1]||'').replace(/^\(|\)$/g,'').trim(); }
   for(const s of sections) s.lines=s.lines.filter(l=>!drop.has(l));
   for(let i=sections.length-1;i>=0;i--) if(!sections[i].lines.length && !sections[i].label) sections.splice(i,1);
   return out;
@@ -1220,6 +1300,28 @@ function completeSections(sections){
       if(filled) s.filled=true;
     }
   }
+  // 3) último recurso para estrofas de otro largo: usar la estrofa con acordes más parecida (mismo nombre
+  //    primero, después la de métrica más cercana) y repetir sus versos en orden
+  for(let i=0;i<res.length;i++){
+    const s=res[i]; if(s.ref) continue; const L=s.lines.filter(isLyr); const miss=L.filter(l=>!l.chords.length);
+    if(L.length<2 || miss.length<Math.max(2,L.length*0.5)) continue;
+    const prof=L.map(l=>Scroll.syl(l.lyric)); const avg=prof.reduce((a,b)=>a+b,0)/prof.length;
+    let best=null;
+    res.forEach((r,j)=>{ if(j===i||r.ref) return; const RL=r.lines.filter(l=>isLyr(l)&&l.chords.length&&!l.chords.some(c=>c.inf)); if(RL.length<2) return;
+      const ravg=RL.reduce((a,l)=>a+Scroll.syl(l.lyric),0)/RL.length; let sc=Math.abs(avg-ravg)+Math.abs(RL.length-L.length)*0.4;
+      if(s.label && r.label && norm(s.label).slice(0,5)===norm(r.label).slice(0,5)) sc-=4; else if(!s.label && !r.label) sc-=0.5; if(j>i) sc+=0.8;
+      if(!best||sc<best.sc) best={sc,RL}; });
+    if(best && best.sc<5){ L.forEach((l,k)=>{ if(!l.chords.length) l.chords=mapChordsToLine(best.RL[k%best.RL.length], l.lyric); }); s.filled=true; continue; }
+    // si la fuente partió las estrofas verso por verso, se usa la secuencia de todos los versos con acordes
+    const seq=res.flatMap(r=>r.ref?[]:r.lines.filter(l=>isLyr(l)&&l.chords.length&&!l.chords.some(c=>c.inf)));
+    if(seq.length>=2){ let bw=null; const n=Math.min(L.length, seq.length);
+      for(let st=0; st+n<=seq.length; st++){ const sc=profileDist(prof.slice(0,n), seq.slice(st,st+n).map(l=>Scroll.syl(l.lyric)))+(st%2?0.3:0); if(!bw||sc<bw.sc) bw={sc,st}; }
+      if(bw && bw.sc<6){ L.forEach((l,k)=>{ if(!l.chords.length) l.chords=mapChordsToLine(seq[bw.st+(k%n)], l.lyric); }); s.filled=true; } }
+  }
+  // 4) letra sin ningún acorde pero con una intro/riff de acordes: la progresión de la intro acompaña la estrofa
+  const anyLyrChords=res.some(r=>r.lines.some(l=>isLyr(l)&&l.chords.length));
+  if(!anyLyrChords){ const intro=res.find(r=>r.lines.some(l=>l.co&&l.chords.length>=2)); if(intro){ const prog=intro.lines.find(l=>l.co&&l.chords.length>=2).chords;
+    for(const s of res){ const L=s.lines.filter(isLyr); if(!L.length) continue; L.forEach((l,k)=>{ const c=prog[k%prog.length]; l.chords=[{i:0,c:c.c,inf:true}]; }); s.filled=true; } } }
   return res;
 }
 function dispSections(s){
@@ -1844,7 +1946,9 @@ function quickSave(items){
   for(const it of items){
     if(it.error || !it.sections) continue;
     const nCh=it.sections.reduce((n,s)=>n+s.lines.reduce((m,l)=>m+(l.chords||[]).length,0),0);
-    if(!nCh){ toast('No encontré acordes en el texto. Revisá que estén en la línea de arriba de la letra.'); continue; }
+    const nLines=it.sections.reduce((n,s)=>n+s.lines.filter(l=>(l.lyric&&l.lyric.trim())||l.tab).length,0);
+    if(!nCh && !nLines){ toast('No encontré una canción en ese texto. Probá seleccionando solo la letra con los acordes.', 5000); continue; }
+    it.noChords=!nCh;
     const match=importTarget||findMatch(it.title);
     const s= match? match : {id:uid(), user:{}, tempo:'medio', title:it.title||'Sin título', artist:artistAlias(it.artist||''), genre:guessGenre(it.artist||'')};
     prevStates.push({id:s.id, prev: match? JSON.parse(JSON.stringify(s,(k,v)=>k.startsWith('_')?undefined:v)) : null});
@@ -1857,13 +1961,25 @@ function quickSave(items){
   importTarget=null; if(!saved.length) return;
   buildLibrary(); closeSheet();
   const undo=()=>{ for(const p of prevStates){ if(p.prev){ userSongs[p.id]=p.prev; Cloud.queue(p.id); } else { delete userSongs[p.id]; Cloud.queue(p.id); } } store.set('songs',userSongs); buildLibrary(); if(cur) closeSong(); else render(); toast('Deshecho'); };
-  if(saved.length===1){ const s=LIB.find(x=>x.id===saved[0].id); if(cur && cur.id===s.id){ cur=s; renderReader(); } else openSong(s); toast('Guardada', 5000, {label:'Deshacer', fn:undo}); }
+  if(saved.length===1){ const s=LIB.find(x=>x.id===saved[0].id); if(cur && cur.id===s.id){ cur=s; renderReader(); } else openSong(s);
+    if(items.some(it=>it.noChords)){ toast('Guardada sin acordes: tocá las sílabas para ponerlos', 6000); setTimeout(()=>openSongEditor(s,2), 300); }
+    else if(s.sections.some(x=>x.lines.some(l=>l.fromTab))) toast('Guardada. Los acordes en cursiva los dedujo de la tablatura', 6000, {label:'Deshacer', fn:undo});
+    else toast('Guardada', 5000, {label:'Deshacer', fn:undo}); }
   else { render(); toast(saved.length+' canciones guardadas', 5000, {label:'Deshacer', fn:undo}); }
 }
 const ARTIST_ALIAS={'la sole':'Soledad Pastorutti','soledad':'Soledad Pastorutti','miranda':'Miranda!','mancha de rolando':'La Mancha de Rolando','piojos':'Los Piojos'};
 function artistAlias(a){ return ARTIST_ALIAS[norm(a)]||a; }
+/* títulos de página: "Intento (acordes) - Ulises Bueno - Cifra Club", "INTENTO: Acordes y Letra para Guitarra… (Ulises Bueno)" */
+function pageTitleMeta(t){
+  t=String(t||'').trim(); let m;
+  if((m=t.match(/^(.+?)\s*\((?:acordes|letra|tab|tablatura|cifra|chords)[^)]*\)\s*[-–|]\s*(.+?)(?:\s*[-–|]\s*(?:cifra ?club|lacuerda.*|ultimate.*))?$/i))) return {title:titleCase(m[1]), artist:m[2].trim()};
+  if((m=t.match(/^(.+?):\s*(?:acordes|letra|tab)[^(]*\((.+)\)\s*$/i))) return {title:titleCase(m[1]), artist:m[2].trim()};
+  if((m=t.match(/^(.+?)\s+[-–]\s+(.+?)\s*[-–|]\s*(?:acordes|letra|chords|cifra ?club|lacuerda)/i))) return {title:titleCase(m[1]), artist:m[2].trim()};
+  return null;
+}
 function textToImport(text, fname){
   const res=parseSongText(text); const hd=splitHeader(res.sections); const fm=fname?fileMeta(fname):{};
+  const pm=pageTitleMeta(hd.title); if(pm){ hd.title=pm.title; if(!hd.artist || norm(hd.artist)===norm(pm.artist)) hd.artist=pm.artist; }
   if(hd.title && fm.artist && norm(hd.title)===norm(fm.artist)){ const t=fm.title; fm.title=fm.artist; fm.artist=t; }
   return {title:res.meta.title||hd.title||fm.title||'Sin título', artist:artistAlias(res.meta.artist||hd.artist||fm.artist||''), sections:res.sections, capo:res.meta.capo||hd.capo||0, key:res.meta.key, file:fname};
 }
