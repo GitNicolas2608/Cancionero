@@ -1,0 +1,49 @@
+CANCIONERO DE GUITARRA · cómo publicarlo para abrirlo desde el celular
+======================================================================
+
+Esta carpeta es la app completa (una "PWA"): se abre con un enlace, se instala
+en la pantalla de inicio del celular, funciona sin conexión y tiene micrófono
+(afinador, entonación, mi registro). Los archivos:
+
+  index.html     la app
+  manifest.json  datos para instalarla como app
+  sw.js          funcionamiento sin conexión
+  icon-192.png / icon-512.png   íconos
+
+PUBLICARLA EN GITHUB PAGES (gratis, 10 minutos, sin instalar nada)
+------------------------------------------------------------------
+1. Entrá a https://github.com e iniciá sesión (o creá una cuenta).
+2. Arriba a la derecha: "+" → "New repository".
+   - Repository name: cancionero
+   - Public
+   - Marcá "Add a README file" y tocá "Create repository".
+3. En el repositorio: "Add file" → "Upload files".
+   Arrastrá los 5 archivos de esta carpeta (index.html, manifest.json, sw.js
+   y los dos íconos). Abajo, "Commit changes".
+4. "Settings" (pestaña del repositorio) → en el menú izquierdo "Pages".
+   En "Branch" elegí "main" y la carpeta "/ (root)" → "Save".
+5. Esperá un minuto y recargá esa página: aparece el enlace, parecido a
+     https://TU-USUARIO.github.io/cancionero/
+   Ese es el enlace de tu app.
+
+INSTALARLA EN EL CELULAR
+------------------------
+- Android (Chrome): abrí el enlace → menú ⋮ → "Instalar aplicación"
+  (o "Agregar a pantalla de inicio"). También aparece el botón "Instalar"
+  dentro de Ajustes de la app.
+- iPhone (Safari): abrí el enlace → botón Compartir → "Agregar a inicio".
+
+PASAR TUS CANCIONES DE LA COMPU AL CELULAR (y al revés)
+-------------------------------------------------------
+Sin cuenta no hay nube: la sincronización es por archivo.
+1. En la compu, abrí la app (Cancionero.html o el enlace) → Ajustes →
+   "Exportar copia". Guardá el archivo en OneDrive.
+2. En el celular, abrí la app → Ajustes → "Importar copia" → elegí ese
+   archivo desde OneDrive. La app fusiona sin duplicar y conserva lo más nuevo.
+Repetí en el sentido que haga falta cada vez que agregues canciones.
+
+ACTUALIZAR LA APP
+-----------------
+Cuando haya una versión nueva de index.html, volvé a subirla al repositorio
+("Add file" → "Upload files", mismo nombre, "Commit changes"). Los celulares
+la toman solos la próxima vez que abran la app con conexión.
