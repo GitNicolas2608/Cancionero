@@ -2778,13 +2778,16 @@ function openSettings(){
     const drawGh=()=>{ ghCard.innerHTML=''; ghCard.append(h('b',null,'Sincronizar compu y celular'));
       if(GSync.enabled()){
         ghCard.append(h('p',{class:'muted',style:'margin:0;font-size:14px'},'Conectado con tu GitHub. Lo que agregues o cambies acá aparece en el otro dispositivo al abrir la app. ', h('span',{id:'ghStatus',text:GSync.statusText()})));
-        ghCard.append(h('div',{class:'row'}, h('button',{class:'btn small',onclick:async()=>{ toast('Sincronizando…'); try{ const n=await GSync.pull(); await GSync.push(); toast(n?n+' actualizadas':'Todo al día'); }catch(e){ toast('No se pudo: '+e.message); } drawGh(); }},'Sincronizar ahora'), h('button',{class:'btn small ghost',onclick:()=>{ GSync.disconnect(); drawGh(); }},'Desconectar')));
+        ghCard.append(h('div',{class:'row'}, h('button',{class:'btn small',onclick:async()=>{ toast('Sincronizando…'); try{ const n=await GSync.pull(); await GSync.push(); toast(n?n+' actualizadas':'Todo al día'); }catch(e){ toast('No se pudo: '+e.message); } drawGh(); }},'Sincronizar ahora'),
+          h('button',{class:'btn small',onclick:async()=>{ const c=GSync.cfg(); try{ await navigator.clipboard.writeText(c.token); toast('Clave copiada. Mandátela a vos mismo y pegala en Ajustes del otro dispositivo.', 6000); }catch(e){ toast('No se pudo copiar'); } }},'Copiar clave para el otro dispositivo'),
+          h('button',{class:'btn small ghost',onclick:()=>{ GSync.disconnect(); drawGh(); }},'Desconectar')));
       } else {
-        ghCard.append(h('p',{class:'muted',style:'margin:0;font-size:14px'},'Usa un archivo privado en tu cuenta de GitHub (la misma donde publicaste la app). Se hace una vez por dispositivo:'),
+        ghCard.append(h('p',{class:'muted',style:'margin:0;font-size:14px'},'Usa un archivo privado en tu cuenta de GitHub (la misma donde publicaste la app). Se hace una sola vez:'),
           h('ol',{style:'margin:0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.45'},
-            h('li',null,'En GitHub: foto de perfil → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token.'),
-            h('li',null,'Ponele un nombre, en Expiration elegí "No expiration" y marcá solo la casilla ',h('b',null,'gist'),'. Generá y copiá el token.'),
-            h('li',null,'Pegalo acá y tocá Conectar. En el otro dispositivo, pegá el mismo token.')));
+            h('li',null,'Tocá ',h('b',null,'Crear clave en GitHub'),': se abre la página ya completada. Bajá hasta el final, tocá ',h('b',null,'Generate token'),' y copiá la clave (empieza con ghp_).'),
+            h('li',null,'Pegala acá abajo y tocá Conectar.'),
+            h('li',null,'En el otro dispositivo, pegá la misma clave (acá vas a tener un botón para copiarla).')),
+          h('a',{class:'btn warm',href:'https://github.com/settings/tokens/new?scopes=gist&description=Cancionero%20-%20sincronizacion',target:'_blank',rel:'noopener'},'Crear clave en GitHub'));
         const inp=h('input',{class:'box',type:'password',placeholder:'ghp_…',autocomplete:'off'});
         ghCard.append(h('div',{class:'row'}, h('div',{class:'grow'},inp), h('button',{class:'btn primary',onclick:async e=>{ e.target.disabled=true; e.target.textContent='Conectando…'; try{ await GSync.connect(inp.value); toast('Sincronización activada'); drawGh(); }catch(err){ toast(err.message, 5000); e.target.disabled=false; e.target.textContent='Conectar'; } }},'Conectar')));
       } };
