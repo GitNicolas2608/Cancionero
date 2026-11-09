@@ -1670,7 +1670,8 @@ function renderReader(){
   if(capo) info.append(h('span',{class:'chip warm'},'Capo '+capo));
   const voiceSug = prefs.voice && k ? voiceSuggestion(s) : null;
   if(voiceSug && voiceSug.semis!==T) info.append(h('button',{class:'chip warm',style:'border:0',onclick:()=>{ s.user.transpose=voiceSug.semis; if(prefs.autoCapo){ s.user.capo=capoOptions(songChordList(s),voiceSug.semis)[0].capo; } saveSong(s,true); renderReader(); toast('Tono ajustado a tu voz'); }},'Para tu voz: '+keyName(k,voiceSug.semis,latin())+' →'));
-  else if(voiceSug) info.append(h('span',{class:'chip',style:'color:var(--ok)'},'Tono cómodo para tu voz'));
+  else if(voiceSug) info.append(h('span',{class:'chip ok'},'Tono cómodo para tu voz'));
+  if(k) info.append(h('button',{class:'chip',style:'border:0',onclick:showVoiceSheet}, prefs.voice? (s.melody?'🎤 Mi voz ✓':'🎤 Mi voz') : '🎤 Ajustar a mi voz'));
   info.append(h('span',{class:'chip'},'≈ '+fmtTime(Scroll.estimate(s))));
   // cuerpo
   const body=$('#rdBody'); body.innerHTML='';
@@ -2342,17 +2343,112 @@ function saveVoiceResult(r, mode){
 const VOICE_CENTER={m:56, f:64};
 const FEMALE_RE=/walsh|soledad|sole\b|pastorutti|julieta|venegas|oreja de van gogh|mercedes sosa|shakira|natalia|lali|tini|marilina|patricia sosa|valeria lynch|celeste carballo|fabiana cantilo/;
 function songVoice(s){ return s.voice || (FEMALE_RE.test(norm(s.artist))?'f':'m'); }
-function voiceSuggestion(s){
-  const v=prefs.voice; const k=songKey(s); if(!v||!k) return null;
+/* Zona cómoda corregida por lo que fuiste diciendo ("me queda alto/bajo") */
+/* Dónde queda la melodía en un tono dado, en la octava que mejor te queda (una octava arriba o abajo es el mismo tono) */
+function melodyAt(s, T, z){ z=z||voiceZone(); let best=null;
+  for(const o of [-12,0,12]){ const lo=s.melody.lo+T+o, hi=s.melody.hi+T+o; const over=Math.max(0,z.lo-lo)+Math.max(0,hi-z.hi);
+    const sc=over*10+Math.abs((lo+hi)/2-z.center); if(!best||sc<best.sc) best={lo,hi,over,sc}; }
+  return best; }
+function voiceZone(){ const v=prefs.voice; if(!v) return null; const adj=clamp(v.adj||0,-4,4); return {lo:v.lo+adj, hi:v.hi+adj, center:(v.lo+v.hi)/2+adj, adj}; }
+/* Tono sugerido, en orden de confianza:
+   1) el que elegiste vos para esta canción ("me queda bien" / alto / bajo)
+   2) el calculado con la melodía medida: que toda la melodía entre en tu zona cómoda
+   3) la estimación por la voz original (sin conocer la melodía) */
+function voiceSuggestion(s, ignoreLearned){
+  const v=prefs.voice; const k=songKey(s); if(!v||!k) return null; const z=voiceZone();
+  if(!ignoreLearned && s.user.voiceT!=null) return {semis:s.user.voiceT, how:'elegido por vos'};
+  const ease=d=>capoOptions(songChordList(s),d)[0].avg;
+  if(s.melody && s.melody.hi>s.melody.lo){
+    let best=null;
+    for(let d=-6; d<=6; d++){ const r=melodyAt(s,d,z);
+      const score=r.over*2 + Math.abs((r.lo+r.hi)/2-z.center)*0.35 + ease(d)*0.3 + Math.abs(d)*0.02;
+      if(!best||score<best.score) best={semis:d, score, over:r.over, how:'según la melodía medida'}; }
+    return best;
+  }
   const c0=VOICE_CENTER[songVoice(s)]||58;
-  let dx=v.center-c0; dx-=12*Math.round(dx/12);
+  let dx=z.center-c0; dx-=12*Math.round(dx/12);
   let best=null;
   for(let d=Math.floor(dx)-1; d<=Math.ceil(dx)+1; d++){
-    const dd=((d+6)%12+12)%12-6; const ease=capoOptions(songChordList(s),dd)[0].avg;
-    const score=Math.abs(d-dx)+ease*0.3;
-    if(!best||score<best.score) best={semis:dd, score};
+    const dd=((d+6)%12+12)%12-6;
+    const score=Math.abs(d-dx)+ease(dd)*0.3;
+    if(!best||score<best.score) best={semis:dd, score, how:'estimado por la voz original'};
   }
   return best;
+}
+/* Registra cómo te quedó el tono actual. Aprende para esta canción y, de a poco, para todas. */
+function voiceFeedback(s, dir){
+  const T=s.user.transpose||0;
+  if(dir===0){ s.user.voiceT=T; saveSong(s,true); toast('Listo: este tono queda guardado para vos'); return; }
+  const auto=voiceSuggestion(s,true);
+  s.user.transpose=T+dir; if(s.user.transpose>6) s.user.transpose-=12; if(s.user.transpose<-6) s.user.transpose+=12;
+  s.user.voiceT=s.user.transpose;
+  // si te quejaste del tono que sugirió la app, la zona general se corre medio semitono
+  if(auto && auto.semis===T && prefs.voice){ prefs.voice.adj=clamp((prefs.voice.adj||0)+dir*0.5,-4,4); savePrefs(); }
+  if(prefs.autoCapo){ s.user.capo=capoOptions(songChordList(s),s.user.transpose)[0].capo; }
+  saveSong(s,true);
+}
+/* Melodía cantada: notas sostenidas, sin los extremos sueltos */
+function melodyFromFrames(frames){
+  const m=frames.filter(x=>x && x.clarity>0.75).map(x=>toMidi(x.f)); if(m.length<15) return null;
+  const sm=m.map((v,i)=>{ const w=m.slice(Math.max(0,i-2),i+3).sort((a,b)=>a-b); return w[Math.floor(w.length/2)]; });
+  const stable=[]; let run=[sm[0]];
+  for(let i=1;i<sm.length;i++){ if(Math.abs(sm[i]-run[0])<0.7) run.push(sm[i]); else { if(run.length>=4) stable.push(run.reduce((a,b)=>a+b)/run.length); run=[sm[i]]; } }
+  if(run.length>=4) stable.push(run.reduce((a,b)=>a+b)/run.length);
+  if(stable.length<5) return null;
+  stable.sort((a,b)=>a-b); const q=p=>stable[Math.min(stable.length-1,Math.max(0,Math.round((stable.length-1)*p)))];
+  return {lo:Math.round(q(0.05)), hi:Math.round(q(0.95)), notes:stable.length};
+}
+async function framesFromAudioFile(file){
+  const AC=window.AudioContext||window.webkitAudioContext; const ctx=new AC();
+  const ab=await ctx.decodeAudioData(await file.arrayBuffer()); ctx.close();
+  const ch=ab.getChannelData(0); const dd=decimate(ch, ab.sampleRate); const N=1024, hop=480; const frames=[];
+  for(let i=0;i+N<dd.buf.length && frames.length<6000;i+=hop) frames.push(yin(dd.buf.subarray(i,i+N), dd.sr));
+  return frames;
+}
+function saveMelody(s, mel){
+  const T=s.user.transpose||0; s.melody={lo:mel.lo-T, hi:mel.hi-T, date:Date.now()};
+  delete s.user.voiceT; // la medición nueva manda sobre lo elegido antes
+  saveSong(s,true);
+}
+/* Hoja "Tu voz y esta canción" */
+let audioTarget=null;
+function showVoiceSheet(){
+  const s=cur; const k=songKey(s); const T=s.user.transpose||0;
+  openSheet('Tu voz y esta canción', sh=>{
+    if(!prefs.voice){
+      sh.append(h('p',{class:'lead'},'Primero medí tu voz una vez: así la app sabe tu zona cómoda.'),
+        h('button',{class:'btn primary big',onclick:()=>{ closeSheet(); closeSong(); go('voice','range'); }},'Medir mi voz'));
+      return;
+    }
+    const z=voiceZone(); const sg=voiceSuggestion(s); const mt=s.melody? melodyAt(s,T,z) : null;
+    sh.append(h('div',{class:'stats'},
+      h('div',{class:'stat'},h('small',null,'Tu zona cómoda'),h('b',{text:midiName(z.lo)+' – '+midiName(z.hi)})),
+      h('div',{class:'stat'},h('small',null,'Melodía en este tono'),h('b',{text: mt? midiName(mt.lo)+' – '+midiName(mt.hi) : 'sin medir'})),
+      sg? h('div',{class:'stat'},h('small',null,'Tono sugerido ('+sg.how+')'),h('b',{text:keyName(k,sg.semis,latin())})) : null));
+    if(mt){ const lo=mt.lo, hi=mt.hi; const msg = hi>z.hi? 'En este tono la melodía te sube '+(hi-z.hi)+' semitono'+(hi-z.hi>1?'s':'')+' de más.' : lo<z.lo? 'En este tono la melodía baja '+(z.lo-lo)+' semitono'+(z.lo-lo>1?'s':'')+' de más.' : 'En este tono toda la melodía entra en tu zona cómoda.'; sh.append(h('p',{class:'lead'},msg)); }
+    if(sg && sg.semis!==T) sh.append(h('button',{class:'btn primary block',onclick:()=>{ s.user.transpose=sg.semis; if(prefs.autoCapo) s.user.capo=capoOptions(songChordList(s),sg.semis)[0].capo; saveSong(s,true); closeSheet(); renderReader(); toast('Tono ajustado a tu voz'); }},'Usar '+keyName(k,sg.semis,latin())));
+    sh.append(h('div',{class:'field'},'¿Cómo te queda cantarla en '+keyName(k,T,latin())+'?',
+      h('div',{class:'row'},
+        h('button',{class:'btn grow',onclick:()=>{ voiceFeedback(s,-1); closeSheet(); renderReader(); toast('Bajé medio tono. Si sigue alto, volvé a tocar.'); }},'Me queda alto'),
+        h('button',{class:'btn grow',onclick:()=>{ voiceFeedback(s,0); closeSheet(); renderReader(); }},'Me queda bien'),
+        h('button',{class:'btn grow',onclick:()=>{ voiceFeedback(s,1); closeSheet(); renderReader(); toast('Subí medio tono. Si sigue bajo, volvé a tocar.'); }},'Me queda bajo'))));
+    // medir la melodía
+    const msg=h('p',{class:'micnote',style:'text-align:left;margin:0'});
+    const note=h('div',{class:'notebig',style:'font-size:40px'},'–');
+    const rec=h('button',{class:'btn primary'}, 'Medir cantando');
+    let frames=[];
+    rec.addEventListener('click', async ()=>{
+      if(Mic.active){ Mic.stop(); rec.textContent='Medir cantando'; const mel=melodyFromFrames(frames);
+        if(!mel){ msg.textContent='No llegué a escuchar suficientes notas. Cantá el estribillo completo, cerca del celular.'; return; }
+        saveMelody(s, mel); closeSheet(); renderReader(); toast('Melodía guardada: '+midiName(mel.lo)+' a '+midiName(mel.hi)); showVoiceSheet(); return; }
+      frames=[]; const ok=await Mic.start(r=>{ frames.push(r); if(r&&r.clarity>0.75) note.textContent=midiName(toMidi(r.f)); }, ()=>micFail(msg));
+      if(ok){ rec.textContent='Listo, terminé'; msg.textContent='Cantá el estribillo y la estrofa más aguda, en el tono que suena ahora ('+keyName(k,T,latin())+'). Podés tocar la guitarra al mismo tiempo.'; }
+    });
+    sh.append(h('div',{class:'card stack',style:'gap:8px'}, h('b',null,'Medir la melodía de esta canción'),
+      h('p',{class:'muted',style:'margin:0;font-size:14px'},'La app escucha la nota más grave y la más aguda que cantás. Con eso calcula el tono exacto para que toda la canción entre en tu voz. Se hace una vez por canción.'),
+      h('div',{class:'row'}, rec, h('button',{class:'btn',onclick:()=>{ audioTarget={kind:'melody', song:s}; $('#audioIn').value=''; $('#audioIn').click(); }},'Usar una grabación'), note), msg,
+      s.melody? h('button',{class:'btn small ghost',onclick:()=>{ delete s.melody; saveSong(s,true); closeSheet(); renderReader(); }},'Borrar melodía medida') : null));
+  });
 }
 function renderVoice(v){
   setTop('Voz'); v.append(backRow('Mi registro'));
@@ -2374,12 +2470,13 @@ function renderVoice(v){
     v.append(h('div',{class:'stats'},
       h('div',{class:'stat'},h('small',null,'Tipo de voz (aprox.)'),h('b',{text:vr.type})),
       h('div',{class:'stat'},h('small',null,'Zona cómoda'),h('b',{text:midiName(vr.lo)+' – '+midiName(vr.hi)})),
+      vr.adj? h('div',{class:'stat'},h('small',null,'Aprendido de tus "alto/bajo"'),h('b',{text:(vr.adj>0?'+':'')+vr.adj+' semitono'+(Math.abs(vr.adj)===1?'':'s')})):null,
       vr.speak? h('div',{class:'stat'},h('small',null,'Tono al hablar'),h('b',{text:midiName(vr.speak)})):null,
       vr.sungLo? h('div',{class:'stat'},h('small',null,'Extremos cantados'),h('b',{text:midiName(vr.sungLo)+' – '+midiName(vr.sungHi)})):null));
     const rec=h('div',{class:'songs reco',style:'margin-top:12px'});
     LIB.slice().sort((a,b)=>a.title.localeCompare(b.title,'es')).forEach(s=>{ const k=songKey(s); if(!k) return; const sg=voiceSuggestion(s); if(!sg) return; const capo=capoOptions(songChordList(s),sg.semis)[0];
       rec.append(h('button',{class:'song',onclick:()=>{ s.user.transpose=sg.semis; if(capo.capo && (capoOptions(songChordList(s),sg.semis).find(o=>o.capo===0).avg-capo.avg)>0.25) s.user.capo=capo.capo; else s.user.capo=0; saveSong(s,true); openSong(s); }},
-        h('div',{class:'grow'},h('div',{class:'t',text:s.title}),h('div',{class:'a',text:'Original '+keyName(k,0,latin())+' (voz '+(songVoice(s)==='f'?'femenina':'masculina')+')'+(sg.semis?` · ${sg.semis>0?'+':''}${sg.semis} semitonos`:' · sin cambios')})),
+        h('div',{class:'grow'},h('div',{class:'t',text:s.title}),h('div',{class:'a',text:'Original '+keyName(k,0,latin())+(sg.semis?` · ${sg.semis>0?'+':''}${sg.semis} semitonos`:' · sin cambios')+' · '+sg.how})),
         h('div',{class:'meta'},h('span',{class:'chip key'},keyName(k,sg.semis,latin())), capo.capo?h('span',{class:'chip warm'},'capo '+capo.capo):null)));
     });
     v.append(h('div',{class:'sectionhead'},h('h2',null,'Tonos sugeridos'),h('span',{class:'muted',style:'font-size:13px'},'Tocá para abrir con ese tono')), rec);
@@ -2900,7 +2997,12 @@ rs.addEventListener('click', e=>{
 $('#sheetwrap').addEventListener('click', e=>{ if(e.target.id==='sheetwrap') closeSheet(); });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ if(!$('#sheetwrap').hidden) closeSheet(); else if(cur) history.back(); } if(cur && e.key===' ' && $('#sheetwrap').hidden && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){ e.preventDefault(); $('#playBtn').click(); } });
 $('#fileIn').addEventListener('change', e=>{ const f=[...e.target.files]; if(f.length) handleFiles(f); });
-$('#audioIn').addEventListener('change', e=>{ const f=e.target.files[0]; if(f){ Voice.mode='sing'; analyzeAudioFile(f); } });
+$('#audioIn').addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return;
+  if(audioTarget && audioTarget.kind==='melody'){ const s=audioTarget.song; audioTarget=null; toast('Analizando grabación…', 8000);
+    try{ const mel=melodyFromFrames(await framesFromAudioFile(f)); if(!mel){ toast('No encontré suficientes notas cantadas en esa grabación.', 5000); return; }
+      saveMelody(s, mel); if(cur && cur.id===s.id){ closeSheet(); renderReader(); showVoiceSheet(); } toast('Melodía guardada: '+midiName(mel.lo)+' a '+midiName(mel.hi)); }
+    catch(err){ toast('No pude leer ese audio. Probá con m4a, mp3 o wav.'); } return; }
+  Voice.mode='sing'; analyzeAudioFile(f); });
 $('#songAudioIn').addEventListener('change', e=>{ const f=e.target.files[0]; if(f && Detect.onFile) Detect.onFile(f); });
 $('#backupIn').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importBackup(f); });
 document.addEventListener('visibilitychange', async ()=>{ if(document.visibilityState==='visible' && Scroll.playing && !Scroll.wake){ try{ Scroll.wake=await navigator.wakeLock.request('screen'); }catch(e){} } });
