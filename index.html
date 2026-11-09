@@ -1261,6 +1261,49 @@ function completeSections(sections){
     }
     res.push(s);
   }
+  // 1b) comentarios del que transcribió al final ("espero que les sirva", "saludos!!!") no son letra
+  const NOTE_TRAIL=/(espero (que )?(les|te|a alguien)|espero haber|saludos|gracias por|cualquier (duda|error|correcci)|corrij|transcrib|esta versi[oó]n|!{2,}|\bxd\b|jaja|aporte|mi primer(a)? (tab|aporte))/i;
+  for(const s of res.slice(-2)) for(const l of s.lines) if(isLyr(l) && !l.chords.length && NOTE_TRAIL.test(l.lyric)){ l.note=l.lyric.trim(); delete l.lyric; }
+  // 1c) números romanos: "II  En mi voz…" numera la estrofa; "(ídem I)", "igual que la II" o una estrofa
+  //     sin acordes que repite un número ya usado indican qué acordes de las estrofas escritas lleva
+  const ROMAN={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8,IX:9,X:10};
+  const romanAt=t=>{ const m=String(t).match(/^\s*([IVX]{1,4})(?:\s*[.):\-]\s*|\s{2,}|\s(?=\S))/); if(!m||!ROMAN[m[1]]) return null; if(m[1].length===1 && !/^\s*[IVX](?:\s*[.):\-]|\s{2,})/.test(t)) return null; return {n:ROMAN[m[1]], cut:m[0].length}; };
+  const refAt=t=>{ const m=String(t).match(/\b(?:idem|[íi]dem|igual(?:\s+que)?|como)\b[^)\]]*?\b([IVX]{1,4}|\d)\b/i); if(!m) return null; return ROMAN[m[1].toUpperCase()]||(+m[1]||null); };
+  for(let i=0;i<res.length;i++){ const s=res[i];
+    for(let k=0;k<s.lines.length;k++){ const l=s.lines[k];
+      const txt=l.note || (isLyr(l)&&!l.chords.length? l.lyric : null);
+      if(txt){ const only=String(txt).trim().match(/^\(?\s*([IVX]{1,4})\s*[.):]?\s*\)?$/); // número solo en su línea
+        if(only && ROMAN[only[1]]){ const hasAfter=s.lines.slice(k+1).some(isLyr); (hasAfter? s : (res[i+1]||s)).roman=ROMAN[only[1]]; s.lines.splice(k,1); k--; continue; }
+        const r=/\b(idem|[íi]dem|igual|como)\b/i.test(txt) && (l.note || /^\s*[\[(]/.test(txt)) ? refAt(txt) : null;
+        if(r){ const hasAfter=s.lines.slice(k+1).some(isLyr); (hasAfter? s : (res[i+1]||s)).refRoman=r; } } }
+    const L=s.lines.filter(isLyr); if(!L.length) continue; const r=romanAt(L[0].lyric);
+    if(r){ s.roman=s.roman||r.n; const f=L[0]; f.lyric=f.lyric.slice(r.cut); f.chords.forEach(c=>c.i=Math.max(0,c.i-r.cut)); }
+    if(s.roman && !s.label) s.label=Object.keys(ROMAN).find(k=>ROMAN[k]===s.roman);
+  }
+  const ownChords=r=>{ const L=r.lines.filter(isLyr); return L.length && L.some(l=>l.chords.length && !l.chords.some(c=>c.inf)); };
+  const chordedSecs=res.filter(r=>!r.ref && ownChords(r));
+  for(const s of res){ if(s.ref) continue; const L=s.lines.filter(isLyr); if(!L.length || L.every(l=>l.chords.length)) continue;
+    let tpl=null;
+    if(s.refRoman) tpl=res.find(r=>r!==s && r.roman===s.refRoman && ownChords(r)) || chordedSecs[s.refRoman-1] || null;
+    else if(s.roman) tpl=res.find(r=>r!==s && r.roman===s.roman && ownChords(r)) || null;
+    if(tpl){ const RL=tpl.lines.filter(l=>isLyr(l)&&l.chords.length); if(RL.length){ L.forEach((l,k)=>{ if(!l.chords.length) l.chords=mapChordsToLine(RL[k%RL.length], l.lyric); }); s.filled=true; } }
+  }
+  // 1d) versos sin acordes justo después de versos con acordes en la misma estrofa: repiten los
+  //     inmediatamente anteriores (no los de la primera estrofa de la canción)
+  for(const s of res){ if(s.ref) continue; const L=s.lines.filter(isLyr); let k=0;
+    while(k<L.length){
+      if(L[k].chords.length){ k++; continue; }
+      let e=k; while(e<L.length && !L[e].chords.length) e++;
+      let b=k; while(b>0 && L[b-1].chords.length && !L[b-1].chords.some(c=>c.inf)) b--;
+      const block=L.slice(b,k), run=L.slice(k,e);
+      if(block.length>=2 && block.length>=Math.ceil(run.length/2)){
+        const n=Math.min(block.length, run.length); const rp=run.slice(0,n).map(l=>Scroll.syl(l.lyric)); let bw=null;
+        for(let st=0; st+n<=block.length; st++){ const sc=profileDist(rp, block.slice(st,st+n).map(l=>Scroll.syl(l.lyric)))+st*0.15; if(!bw||sc<bw.sc) bw={sc,st}; }
+        if(bw && bw.sc<4.5){ run.forEach((l,x)=>{ l.chords=mapChordsToLine(block[bw.st+(x%n)], l.lyric); }); s.filled=true; }
+      }
+      k=e;
+    }
+  }
   // 2) completar acordes que faltan
   for(let i=0;i<res.length;i++){
     const s=res[i]; if(s.ref) continue;
