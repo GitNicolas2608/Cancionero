@@ -20,7 +20,7 @@
 /* Layout: una columna para el celular; barra de 4 pestañas abajo; el lector de canción ocupa la pantalla con sus controles en un dock inferior. */
 :root{
   --bg:#F4F6F3; --surface:#FFFFFF; --sunk:#E9EDE8; --ink:#17201B; --muted:#5B6862; --line:#DCE2DC;
-  --chord:#0B6A7E; --chord-bg:#E0EFF2; --warm:#8E5400; --warm-bg:#FAEED6; --now:#FFF4CC; --danger:#A8261C; --ok:#2E7D4F; --ok-bg:#E3F2E8;
+  --chord:#0B6A7E; --chord-bg:#E0EFF2; --warm:#8E5400; --warm-bg:#FAEED6; --now:#FFF4CC; --danger:#A8261C; --ok:#2E7D4F; --ok-bg:#E3F2E8; --s1:#00809C; --s2:#A35F00;
   --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
   --f-mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
@@ -30,10 +30,10 @@
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#0E1412; --surface:#17201C; --sunk:#0A0F0D; --ink:#E6EEE8; --muted:#97A69E; --line:#273430;
-  --chord:#7AD3E6; --chord-bg:#153139; --warm:#F2B955; --warm-bg:#3A2B10; --now:#1F2C26; --danger:#FF8A80; --ok:#7BD39C; --ok-bg:#15301F; color-scheme:dark } }
+  --chord:#7AD3E6; --chord-bg:#153139; --warm:#F2B955; --warm-bg:#3A2B10; --now:#1F2C26; --danger:#FF8A80; --ok:#7BD39C; --ok-bg:#15301F; --s1:#1A9DBB; --s2:#C4851E; color-scheme:dark } }
 :root[data-theme="dark"]{
   --bg:#0E1412; --surface:#17201C; --sunk:#0A0F0D; --ink:#E6EEE8; --muted:#97A69E; --line:#273430;
-  --chord:#7AD3E6; --chord-bg:#153139; --warm:#F2B955; --warm-bg:#3A2B10; --now:#1F2C26; --danger:#FF8A80; --ok:#7BD39C; --ok-bg:#15301F; color-scheme:dark }
+  --chord:#7AD3E6; --chord-bg:#153139; --warm:#F2B955; --warm-bg:#3A2B10; --now:#1F2C26; --danger:#FF8A80; --ok:#7BD39C; --ok-bg:#15301F; --s1:#1A9DBB; --s2:#C4851E; color-scheme:dark }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%}
@@ -92,6 +92,40 @@ main{flex:1;padding:4px var(--gut-r) calc(88px + env(safe-area-inset-bottom,0px)
 .why table{border-collapse:collapse;font-size:15px;margin:6px 0}
 .why td{padding:3px 10px 3px 0}
 .why .deg{color:var(--muted);font-size:13px}
+.listenpill{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 66px);z-index:6;max-width:calc(100% - 32px);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.12);text-align:center;pointer-events:none;transition:opacity .2s}
+.listenpill.warn{border-color:var(--warm);color:var(--warm)}
+.ytbox{position:absolute;right:12px;bottom:calc(var(--dock-h,128px) + 10px);z-index:7;width:min(260px,62vw);background:#000;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.ytbox.big{width:calc(100% - 24px)}
+.ytbar{display:flex;align-items:center;gap:6px;padding:4px 6px 4px 10px;background:var(--surface);color:var(--ink);font-size:13px}
+.ytbar b{flex:1}
+.iconbtn.sm{width:32px;height:32px;font-size:16px}
+.ytframe{position:relative;aspect-ratio:16/9}
+.ytframe iframe,.ytframe>div{position:absolute;inset:0;width:100%;height:100%;border:0}
+.yterr{position:static!important;display:flex;flex-direction:column;gap:8px;align-items:flex-start;padding:10px;color:#fff;font-size:14px;background:#111}
+.chart{width:100%;height:auto;display:block;margin:6px 0 2px;overflow:visible}
+.chart text{font-family:var(--f-body);fill:var(--muted)}
+.chart .ax{font-size:11px}
+.chart .dl{font-size:12px;fill:var(--ink)}
+.chart .zl{font-size:11px;fill:var(--ok)}
+.chart .zone{fill:var(--ok-bg);stroke:var(--ok);stroke-width:1;stroke-dasharray:3 3}
+.chart .rA{fill:var(--s1)} .chart .rB{fill:var(--s2)}
+.chart .kw{fill:var(--surface);stroke:var(--line)} .chart .kb{fill:var(--muted)}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .segV{stroke:var(--s1);stroke-width:4;stroke-linecap:round}
+.chart .segG{stroke:var(--s2);stroke-width:2;stroke-linecap:round;opacity:.85}
+.chart .bar{fill:var(--s1)}
+.chart .mid{stroke:var(--ink);stroke-width:1;stroke-dasharray:2 3}
+.chart .ring{fill:none;stroke:var(--line);stroke-width:2}
+.chart .node{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.chart .nodeA{fill:var(--s1);stroke:var(--surface);stroke-width:2}
+.chart .nodeB{fill:none;stroke:var(--s2);stroke-width:2.5}
+.chart .nl{font-size:12px;fill:var(--ink)} .chart .nlA{font-size:12px;fill:#fff;font-weight:700}
+.chart .cl{font-size:12px} .chart .cv{font-size:18px;fill:var(--ink);font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.legend .sw.a,.legend .sw.v{background:var(--s1)} .legend .sw.b,.legend .sw.g{background:var(--s2)} .legend .sw.z{background:var(--ok-bg);border:1px dashed var(--ok)}
+.ch-t{margin:16px 0 0;font-size:15px} .ch-n{font-size:13px;margin:2px 0 0}
 .field{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted)}
 .field input,.field select,.field textarea,textarea.box,input.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--ink);font-size:16px;min-width:0;width:100%}
 textarea{resize:vertical}
@@ -1647,14 +1681,14 @@ function renderVoiceHub(v){
 /* ---------- Lector de canción ---------- */
 let cur=null;
 function openSong(s){
-  cur=s; Scroll.stop(); Scroll.t=0; s.user.opened=Date.now(); s.updatedAt=s.updatedAt||0; try{ userSongs[s.id]=Object.assign(userSongs[s.id]||{}, {user:s.user}); store.set('songs',userSongs); }catch(e){}
+  cur=s; Scroll.stop(); YTP.close(); Scroll.t=0; s.user.opened=Date.now(); s.updatedAt=s.updatedAt||0; try{ userSongs[s.id]=Object.assign(userSongs[s.id]||{}, {user:s.user}); store.set('songs',userSongs); }catch(e){}
   $('#reader').hidden=false; document.body.style.overflow='hidden';
   $('#rdTitle').textContent=s.title; $('#rdArtist').textContent=s.artist+(s.rhythm?' · '+s.rhythm:'');
   $('#speed').value=s.user.speed||1; $('#speedOut').textContent=(+$('#speed').value).toFixed(2)+'×';
   renderReader(); $('#rdScroll').scrollTop=0;
   history.pushState({song:s.id},'');
 }
-function closeSong(){ Scroll.stop(); $('#reader').hidden=true; document.body.style.overflow=''; cur=null; render(); }
+function closeSong(){ Scroll.stop(); YTP.close(); $('#reader').hidden=true; document.body.style.overflow=''; cur=null; render(); }
 function shiftInfo(s){ const T=s.user.transpose||0, capo=s.user.capo||0; return {T, capo, shapeShift:T-capo}; }
 function renderReader(){
   const s=cur; if(!s) return;
@@ -1679,6 +1713,7 @@ function renderReader(){
   const voiceSug = prefs.voice && k ? voiceSuggestion(s) : null;
   if(voiceSug && voiceSug.semis!==T) info.append(h('button',{class:'chip warm',style:'border:0',onclick:()=>applyVoiceKey(s, voiceSug.semis, voiceSug.why)},'Para tu voz: '+keyName(k,voiceSug.semis,latin())+' →'));
   else if(voiceSug) info.append(h('span',{class:'chip ok'},'Tono cómodo para tu voz'));
+  info.append(h('button',{class:'chip',style:'border:0',onclick:()=>{ if(s.yt){ if($('#ytBox')) YTP.close(); else YTP.open(s); } else showYtSheet(s); }}, s.yt? '▶ Escuchar' : '▶ Buscar en YouTube'));
   if(k) info.append(h('button',{class:'chip',style:'border:0',onclick:showVoiceSheet}, prefs.voice? (s.melody?'🎤 Mi voz ✓':'🎤 Mi voz') : '🎤 Ajustar a mi voz'));
   info.append(h('span',{class:'chip'},'≈ '+fmtTime(Scroll.estimate(s))));
   // cuerpo
@@ -1824,14 +1859,14 @@ const Scroll={
   async start(){
     if(!this.tl.length) return; this.playing=true; this.setIcon();
     try{ if(navigator.wakeLock) this.wake=await navigator.wakeLock.request('screen'); }catch(e){}
-    const sc=$('#rdScroll'); this.mode=scrollMode(); this.song=cur; this.frames=[]; this.rate=this.speed();
+    const sc=$('#rdScroll'); this.mode=scrollMode(); this.song=cur; Sing.reset(); Sing.lineAt=()=>this.mode==='letra'? Follow.line() : this.idxAt(this.t); this.ytHeard=false;
     const fromTop = sc.scrollTop<10 && this.t<1;
     if(this.mode==='letra'){
       this.t = fromTop? 0 : this.tFromScroll();
       const ok=await Follow.start(this.t);
       if(!this.playing){ Follow.stop(); return; }
-      if(!ok){ this.mode=Mic.supported()?'voz':'fijo'; toast('No pude escuchar la letra: el texto se desliza por tiempo.'); }
-      else { $('#playBtn').classList.add('listening'); toast(Follow.pos<0? 'Escuchando… empezá a cantar cuando quieras' : 'Escuchando la letra', 2500); }
+      if(!ok){ this.mode=Mic.supported()?'voz':'fijo'; toast('Esta canción no tiene letra para seguir: el texto se desliza por tiempo.'); }
+      else { $('#playBtn').classList.add('listening'); this.pill(true); }
     }
     if(this.mode!=='letra'){
       if(fromTop){ this.t=0; await this.count(); if(!this.playing) return; }
@@ -1839,16 +1874,30 @@ const Scroll={
     }
     this.sync={real:performance.now(), t:this.t, i:this.idxAt(this.t)};
     this.lastVoice=performance.now(); this.waiting=false;
-    if(this.mode==='voz' && !Mic.active){ this.micMine=await Mic.start(r=>{ if(r && r.clarity>0.6){ this.lastVoice=performance.now(); if(r.clarity>0.75) this.frames.push(r); } }, ()=>{}); }
+    if(this.mode==='voz' && !Mic.active){ this.micMine=await Mic.start((r,now)=>{ if(r && r.clarity>0.6) this.lastVoice=performance.now(); Sing.push(r,now); }, ()=>{}); }
     this.last=performance.now(); cancelAnimationFrame(this.raf); this.raf=requestAnimationFrame(n=>this.tick(n));
   },
   count(){ const n=prefs.countIn|0; if(!n) return Promise.resolve(); const el=$('#countin'); el.hidden=false; let k=n;
     return new Promise(res=>{ const step=()=>{ if(!this.playing){ el.hidden=true; return res(); } if(k===0){ el.hidden=true; return res(); } el.textContent=k; el.style.top=$('#rdScroll').scrollTop+'px'; k--; setTimeout(step, 900); }; step(); }); },
-  stop(){ const was=this.playing; this.playing=false; cancelAnimationFrame(this.raf); this.setIcon(); $('#playBtn').classList.remove('listening'); if(this.wake){ try{ this.wake.release(); }catch(e){} this.wake=null; } if(this.micMine){ Mic.stop(); this.micMine=false; } Follow.stop(); $$('#rdBody .ln.now').forEach(e=>e.classList.remove('now')); $('#countin').hidden=true; this.setWaiting(false);
-    // lo que cantaste mientras se deslizaba: registrar la melodía y proponer el tono
-    const fr=this.frames||[], s=this.song; this.frames=[]; this.song=null;
-    if(was && s && fr.length>40){ const mel=melodyFromFrames(fr); if(mel && mel.notes>=12){ const res=registerSung(s, mel); setTimeout(()=>{ if(cur===s){ const y=$('#rdScroll').scrollTop; renderReader(); $('#rdScroll').scrollTop=y; showSungResult(s, mel, res); } else toast('Guardé la melodía que cantaste en «'+s.title+'»'); }, 250); } }
+  stop(){ const was=this.playing; this.playing=false; cancelAnimationFrame(this.raf); this.setIcon(); $('#playBtn').classList.remove('listening'); if(this.wake){ try{ this.wake.release(); }catch(e){} this.wake=null; } if(this.micMine){ Mic.stop(); this.micMine=false; } Follow.stop(); this.pill(false); $$('#rdBody .ln.now').forEach(e=>e.classList.remove('now')); this.curI=-1; $('#countin').hidden=true; this.setWaiting(false);
+    // lo que cantaste: registrar la melodía, evaluar cómo cantaste y proponer el tono
+    const s=this.song; this.song=null; if(!was || !s) return;
+    const runs=Sing.finish();
+    if(this.ytHeard && !prefs.headphones){ toast('Con la grabación sonando por el parlante no puedo separar tu voz. Con auriculares, te evalúo.', 5000); return; }
+    const mel=melodyFromRuns(runs); if(!mel) return;
+    const T=s.user.transpose||0; const ev=evalSinging(s, runs, T); registerSung(s, mel);
+    setTimeout(()=>{ if(cur===s){ const y=$('#rdScroll').scrollTop; renderReader(); $('#rdScroll').scrollTop=y; showSungResult(s, mel, runs, ev, T); } else toast('Guardé la melodía que cantaste en «'+s.title+'»'); }, 250);
   },
+  /* cartel que dice qué está escuchando: si espera la voz, si suena la guitarra, si te sigue */
+  pill(on){ let el=$('#listenPill'); if(!on){ if(el) el.remove(); return; } if(!el){ el=h('div',{id:'listenPill',class:'listenpill',role:'status'}); $('#reader').append(el); } this.pillTxt=''; },
+  updatePill(now){ const el=$('#listenPill'); if(!el) return; let t, k='';
+    const guitar=now-Sing.guitarAt<1500, voice=now-Sing.voiceAt<1500;
+    if(Follow.problem){ t=Follow.problem; k='warn'; }
+    else if(Follow.pos<0) t= voice? '🎤 Te escucho: esperando reconocer la letra' : guitar? '🎸 Suena la guitarra: espero que empieces a cantar' : '🎤 Esperando que empieces a cantar';
+    else if(Follow.heardAt-Follow.matchAt>9000 && now-Follow.heardAt<3000){ t='No ubico esta parte: tocá el verso que estás cantando'; k='warn'; }
+    else if(now-Follow.heardAt<3000) t='🎤 Siguiendo tu voz';
+    else t= guitar? '🎸 Parte instrumental: espero la voz' : '🎤 Escuchando…';
+    if(t!==this.pillTxt){ this.pillTxt=t; el.textContent=t; el.className='listenpill'+(k?' '+k:''); } },
   setWaiting(w){ if(w===this.waiting) return; this.waiting=w; const el=$('#countin'); if(w){ el.hidden=false; el.textContent='…'; el.style.fontSize='48px'; el.style.top=$('#rdScroll').scrollTop+'px'; } else { el.hidden=true; el.style.fontSize=''; } },
   setIcon(){ $('#playIco').innerHTML=this.playing?'<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>':'<path d="M8 5v14l11-7z"/>'; $('#playBtn').setAttribute('aria-label', this.playing?'Pausar':'Deslizar automáticamente'); },
   tick(now){
@@ -1858,11 +1907,16 @@ const Scroll={
     if(this.touch || now<this.resumeAt){ this.raf=requestAnimationFrame(n=>this.tick(n)); return; }
     if(this.needResync){ this.needResync=false; this.t=this.tFromScroll(); this.sync={real:now, t:this.t, i:this.idxAt(this.t)}; if(this.mode==='letra') Follow.syncTo(this.t); }
     let hold=false;
+    if(YTP.playing) this.ytHeard=true;
     if(this.mode==='letra'){
-      // escuchando la letra: espera hasta que empieces a cantar, y nunca se adelanta más de dos versos a lo último que reconoció
-      if(Follow.pos<0 || this.t>=Follow.capT()) hold=true;
-      if(!hold) this.t+=dt*this.rate;
-      if(this.t>=this.total){ this.t=this.total; if(now-Follow.speechAt>20000){ this.stop(); return; } }
+      // el texto se mueve solo cuando reconoce lo que cantás: se desliza suave hasta ese verso y ahí se queda
+      const tg=this.targetFor(this.t), diff=tg.y-sc.scrollTop;
+      if(Math.abs(diff)>0.5) sc.scrollTop += diff*Math.min(1, dt*3.2);
+      const li=Follow.line(); if(this.curI!==li){ if(this.tl[this.curI]) this.tl[this.curI].el.classList.remove('now'); this.curI=li; if(this.tl[li]) this.tl[li].el.classList.add('now'); }
+      this.updatePill(now);
+      // terminó la letra y hace rato que nadie canta: se detiene sola
+      if(Follow.atEnd() && now-Follow.heardAt>30000 && now-Sing.voiceAt>30000){ this.stop(); return; }
+      this.raf=requestAnimationFrame(n=>this.tick(n)); return;
     } else {
       // seguir la voz: si hace más de 4 s que nadie canta (intro, solo, charla), el texto espera
       if(this.mode==='voz' && this.micMine && this.t>2){ hold = (now-this.lastVoice)>4000; this.setWaiting(hold); if(hold) this.sync={real:now, t:this.t, i:this.idxAt(this.t)}; }
@@ -1898,49 +1952,68 @@ function scrollMode(){
 }
 
 /* ---------- Seguir la letra escuchando lo que cantás ----------
-   El reconocimiento de voz del navegador transcribe lo que cantás; se busca esa frase en la letra.
-   Regla: arranca arriba y solo avanza. Si ya no queda letra abajo (terminaste), busca desde el final hacia arriba
-   la primera vez que aparece lo que estás cantando (por ejemplo, un estribillo que repetís). */
+   El reconocimiento de voz del navegador transcribe lo que cantás y se busca esa frase en la letra.
+   El texto se mueve SOLO cuando reconoce lo que cantás: nunca avanza por su cuenta (en una intro, se queda quieto).
+   Regla: arranca arriba y solo avanza. Sube únicamente si ya no queda letra abajo, o si la letra indica repetir
+   (Estribillo, Coro, Bis…): en ese caso busca desde abajo hacia arriba la primera vez que aparece lo que cantás. */
+const MARK_WORDS=new Set('intro introduccion estribillo coro bis solo instrumental interludio puente final outro repite repetir se estrofa verso parte recitado veces vez dos tres todo y el la del de al i ii iii iv v vi x2 x3 x4 2x 3x 4x'.split(' '));
+const MARK_KEYS=/\b(intro|introduccion|estribillo|coro|bis|solo|instrumental|interludio|puente|final|outro|repite|repetir|recitado|x[2-4]|[2-4]x)\b/;
+function isMarkerLine(t){ const n=norm(t); return !!n && MARK_KEYS.test(n) && n.split(' ').every(w=>MARK_WORDS.has(w)||/^\d+$/.test(w)); }
+/* cómo suena la palabra: b/v, s/z/c, ll/y, h muda, qu/k (el reconocedor escribe lo que oye) */
+function phon(w){ return w.replace(/h/g,'').replace(/v/g,'b').replace(/z/g,'s').replace(/c([ei])/g,'s$1').replace(/qu/g,'k').replace(/c/g,'k').replace(/ll/g,'y').replace(/(.)\1+/g,'$1'); }
 const Follow={
-  rec:null, on:false, words:[], pos:-1, lastMatch:0, lastT:0, speechAt:0, lastKey:'', micMine:false, noPitch:false,
+  rec:null, on:false, words:[], marks:new Set(), pos:-1, heardAt:0, matchAt:0, lastKey:'', micMine:false, noPitch:false, lastErr:null, problem:null,
   supported(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition) && Mic.supported(); },
   build(){
-    this.words=[]; const S=dispSections(cur);
-    Scroll.tl.forEach((e,i)=>{ const l=S[+e.el.dataset.si] && S[+e.el.dataset.si].lines[+e.el.dataset.li]; if(!l || !l.lyric || l.co || l.sk) return;
-      const ws=norm(l.lyric).split(' ').filter(Boolean); ws.forEach((w,k)=>this.words.push({w, i, f:k/ws.length})); });
+    this.words=[]; this.marks=new Set(); const S=dispSections(cur);
+    Scroll.tl.forEach((e,i)=>{ const l=S[+e.el.dataset.si] && S[+e.el.dataset.si].lines[+e.el.dataset.li]; if(!l) return;
+      const raw=l.lyric||'';
+      if(raw && isMarkerLine(raw)){ this.marks.add(i); return; } // "Estribillo", "Coro x2", "Intro"…: no se cantan
+      if(!raw || l.co || l.sk) return;
+      const ws=norm(raw).split(' ').filter(w=>w && !/^(x\d|\dx|bis)$/.test(w));
+      ws.forEach((w,k)=>this.words.push({w, p:phon(w), i, f:k/ws.length})); });
+    // un título de sección sin versos ("Estribillo", "Coro x2") es una indicación de repetir esa parte
+    S.forEach((sec,si)=>{ if(sec.lines.length || !sec.label || !MARK_KEYS.test(norm(sec.label))) return;
+      const nx=Scroll.tl.findIndex(e=>+e.el.dataset.si>si); this.marks.add((nx<0? Scroll.tl.length : nx)-0.5); });
   },
   async start(t){
     this.build(); if(this.words.length<8) return false;
-    this.on=true; this.lastKey=''; this.lastMatch=0; this.speechAt=performance.now(); this.syncTo(t);
+    this.on=true; this.lastKey=''; this.heardAt=0; this.matchAt=0; this.problem=null; this.syncTo(t);
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition; const r=new SR();
     r.lang='es-AR'; r.continuous=true; r.interimResults=true; r.maxAlternatives=1;
-    r.onresult=e=>{ let txt=''; for(let i=0;i<e.results.length;i++) txt+=' '+e.results[i][0].transcript; this.speechAt=performance.now(); this.hear(norm(txt)); };
-    r.onerror=e=>{
-      if(e.error==='not-allowed' || e.error==='service-not-allowed'){ this.on=false; if(Scroll.playing){ Scroll.mode=Mic.supported()?'voz':'fijo'; $('#playBtn').classList.remove('listening'); toast('El navegador no dejó usar el reconocimiento de voz: el texto se desliza por tiempo.',4000); } }
-      // en algunos celulares el micrófono no se puede compartir: se prioriza seguir la letra
-      if(e.error==='audio-capture' && this.micMine){ Mic.stop(); this.micMine=false; this.noPitch=true; }
+    r.onresult=e=>{ let txt=''; for(let i=0;i<e.results.length;i++) txt+=' '+e.results[i][0].transcript; this.problem=null; this.hear(norm(txt)); };
+    r.onerror=e=>{ this.lastErr=e.error;
+      if(e.error==='not-allowed' || e.error==='service-not-allowed'){ this.on=false; this.problem='El navegador no dejó usar el reconocimiento de voz. Tocá el verso que cantás y el texto se ubica.'; }
+      else if(e.error==='network') this.problem='Sin internet no puedo reconocer la letra. Tocá el verso que cantás.';
+      else if(e.error==='audio-capture' && this.micMine){ Mic.stop(); this.micMine=false; this.noPitch=true; } // el micrófono no se comparte: prioridad a la letra
     };
-    r.onend=()=>{ if(this.on) setTimeout(()=>{ if(this.on){ try{ r.start(); }catch(err){} } },120); };
+    // Chrome corta el reconocimiento tras cada silencio (por ejemplo, en una intro): se vuelve a encender solo
+    r.onend=()=>{ if(!this.on) return; const wait=this.lastErr==='network'? 3000 : 80; this.lastErr=null; setTimeout(()=>{ if(this.on){ try{ r.start(); }catch(err){} } }, wait); };
     this.rec=r; try{ r.start(); }catch(e){ this.on=false; return false; }
-    // a la vez, escuchar la altura de tu voz para registrar la melodía (solo mientras se reconocen palabras, para no medir la guitarra)
-    if(!this.noPitch && !Mic.active){ this.micMine=await Mic.start(x=>{ const now=performance.now(); if(x && x.clarity>0.75 && now-this.speechAt<1500) Scroll.frames.push(x); }, ()=>{}); }
+    // a la vez, la altura de tu voz (separada de la guitarra) para registrar la melodía y evaluar cómo cantaste
+    if(!this.noPitch && !Mic.active) this.micMine=await Mic.start((x,now)=>Sing.push(x,now), ()=>{});
     return true;
   },
   stop(){ this.on=false; if(this.rec){ try{ this.rec.onend=null; this.rec.abort(); }catch(e){} this.rec=null; } if(this.micMine){ Mic.stop(); this.micMine=false; } },
-  // ubicar la posición en la letra a partir de un momento de la canción (al tocar un verso o mover el texto con el dedo)
-  syncTo(t){ const i=Scroll.idxAt(t); this.lastMatch=0;
+  // ubicar la posición a partir de un momento de la canción (al tocar un verso o mover el texto con el dedo)
+  syncTo(t){ const i=Scroll.idxAt(t);
     if(t<0.5){ this.pos=-1; return; }
-    let p=this.words.findIndex(w=>w.i>=i); if(p<0) p=this.words.length-1; this.pos=Math.max(0,p-1); },
-  capT(){ const w=this.words[this.pos]; if(!w) return 0; const e=Scroll.tl[w.i+2]; return e? e.start : Scroll.total; },
-  atEnd(){ if(this.pos<0) return false; const last=this.words[this.words.length-1].i; return this.words[this.pos].i>=last; },
-  sim(a,b){ if(a===b) return a.length<=2? 0.5 : 1.2; if(a.length<3||b.length<3) return -0.7;
-    const d=lev(a,b); return 1-d/Math.max(a.length,b.length)>=0.7? 0.8 : -0.7; },
+    let p=this.words.findIndex(w=>w.i>=i); if(p<0) p=this.words.length-1; this.pos=p; this.matchAt=this.heardAt=performance.now(); },
+  line(){ return this.pos>=0 && this.words[this.pos]? this.words[this.pos].i : -1; },
+  atEnd(){ if(this.pos<0) return false; return this.words[this.pos].i>=this.words[this.words.length-1].i; },
+  markerAhead(){ if(this.pos<0) return false; const i0=this.words[this.pos].i; const nx=this.words.find(w=>w.i>i0); const i1=nx? nx.i : Infinity;
+    for(const m of this.marks) if(m>i0 && m<i1) return true; return false; },
+  // última palabra de los k versos que siguen al actual
+  endOfLines(p, k){ const W=this.words; let last=p<0? W[0].i : W[p].i, lines=0;
+    for(let j=Math.max(0,p); j<W.length; j++){ if(W[j].i!==last){ last=W[j].i; lines++; if(lines>k) return j-1; } } return W.length-1; },
+  sim(a,b){ if(a.w===b.w) return a.w.length<=2? 0.5 : 1.2; if(a.w.length<3||b.w.length<3) return -0.7;
+    if(a.p===b.p) return 1.0; const d=lev(a.p,b.p); return 1-d/Math.max(a.p.length,b.p.length)>=0.7? 0.8 : -0.7; },
   // alineación local de lo último que escuchó contra la letra; devuelve la palabra donde termina
   align(h, a, b, fromBottom, thr){
-    const W=this.words, m=h.length, s0=Math.max(0,a-m-2); let prev=new Array(m+1).fill(0), best=null;
-    for(let j=s0;j<=b;j++){ const cur=[0];
-      for(let i=1;i<=m;i++) cur[i]=Math.max(0, prev[i-1]+this.sim(h[i-1],W[j].w), prev[i]-0.6, cur[i-1]-0.6);
-      const sc=cur[m], grew=sc>prev[m]; prev=cur;
+    const W=this.words, m=h.length; if(b<a) return null; const s0=Math.max(0,a-m-2); let prev=new Array(m+1).fill(0), best=null;
+    for(let j=s0;j<=b;j++){ const c=[0];
+      for(let i=1;i<=m;i++) c[i]=Math.max(0, prev[i-1]+this.sim(h[i-1],W[j]), prev[i]-0.6, c[i-1]-0.6);
+      const sc=c[m], grew=sc>prev[m]; prev=c;
       if(j<a || sc<thr || !grew) continue; // solo donde termina lo cantado, no en las palabras que siguen
       const val= fromBottom? j : sc-0.004*(j-a);
       if(!best || val>best.val) best={p:j, sc, val};
@@ -1948,24 +2021,56 @@ const Follow={
     return best;
   },
   hear(txt){
-    const h=txt.split(' ').filter(Boolean).slice(-7); if(h.length<2) return;
-    const key=h.join(' '); if(key===this.lastKey) return; this.lastKey=key;
-    const n=this.words.length;
-    let best=this.align(h, Math.max(0,this.pos-2), n-1, false, 2.2);
-    if(best && best.p<=this.pos) return; // nunca vuelve para atrás mientras quede letra
-    if(!best && this.atEnd()) best=this.align(h, 0, n-1, true, 3.2);
+    const h=txt.split(' ').filter(Boolean).slice(-7).map(w=>({w, p:phon(w)})); if(!h.length) return;
+    const key=h.map(x=>x.w).join(' '); if(key===this.lastKey) return; this.lastKey=key; this.heardAt=performance.now();
+    const n=this.words.length, cur=this.pos;
+    // 1) lo que viene (los próximos versos): alcanza con reconocer poco
+    const near=this.endOfLines(cur, 2);
+    let best=this.align(h, Math.max(0,cur-1), near, false, cur<0? 1.3 : 1.5);
+    // 2) más adelante: hace falta más seguridad (saltaste una parte)
+    if(!best && near<n-1) best=this.align(h, near+1, n-1, false, 2.6);
+    if(best && best.p<=cur) return; // nunca vuelve para atrás mientras quede letra
+    // 3) para atrás: solo si terminó la letra o hay una indicación de repetir; la primera vez desde abajo
+    if(!best && cur>0 && (this.atEnd() || this.markerAhead())) best=this.align(h, 0, cur-1, true, 2.8);
     if(best) this.moveTo(best.p);
   },
-  moveTo(p){
-    const w=this.words[p], e=Scroll.tl[w.i]; if(!e) return; const now=performance.now();
-    const t=e.start + e.dur*Math.min(0.95, w.f+0.15); // el reconocimiento llega con un poco de atraso
-    // aprender tu ritmo entre dos aciertos seguidos, para avanzar parejo mientras no reconoce palabras
-    if(this.lastMatch && p>this.pos && t>this.lastT){ const real=(now-this.lastMatch)/1000, model=t-this.lastT;
-      if(real>2.5 && model>1.5) Scroll.rate=clamp(Scroll.rate*0.6 + clamp(model/real,0.5,2)*0.4, 0.5, 2); }
-    this.pos=p; this.lastMatch=now; this.lastT=t;
-    Scroll.jumpTo(t);
-  }
+  moveTo(p){ const w=this.words[p], e=Scroll.tl[w.i]; if(!e) return;
+    this.pos=p; this.matchAt=performance.now(); Scroll.jumpTo(e.start); }
 };
+/* ---------- Voz y guitarra por separado ----------
+   Cada nota sostenida forma un "tramo". Una cuerda de guitarra se pulsa y se apaga sola, con la afinación quieta.
+   La voz sostiene el volumen y oscila un poco (vibrato, pequeñas variaciones): así se distinguen.
+   Un rasguido tiene mucho volumen pero ninguna altura clara: también es guitarra. */
+const Sing={
+  runs:[], cur:null, t0:0, guitarAt:0, voiceAt:0, lineAt:null,
+  reset(){ this.runs=[]; this.cur=null; this.t0=performance.now(); this.guitarAt=0; this.voiceAt=0; },
+  push(r, now){ now=now||performance.now();
+    if(r && r.rms>0.02 && r.clarity<0.6) this.guitarAt=now;
+    const m= r && r.clarity>0.72 ? toMidi(r.f) : null; const c=this.cur;
+    if(m!=null && c && Math.abs(m-c.ref)<0.6){ c.m.push(m); c.rms.push(r.rms); c.t1=now; return; }
+    if(c) this.close(c);
+    this.cur= m!=null ? {ref:m, m:[m], rms:[r.rms], t0:now, t1:now, line:this.lineAt? this.lineAt() : -1} : null;
+  },
+  close(c){
+    if(c.m.length<4) return;
+    const body=c.m.slice(2); const mean=body.reduce((a,b)=>a+b)/body.length;
+    const std=Math.sqrt(body.reduce((a,b)=>a+(b-mean)**2,0)/body.length)*100; // en cents
+    const peak=Math.max(...c.rms), n3=Math.max(2,Math.floor(c.rms.length/3)), tail=c.rms.slice(-n3), end=tail.reduce((a,b)=>a+b)/tail.length/peak;
+    const decays=end<0.55, steady=std<5;
+    const kind=(decays && steady)? 'guitar' : (!decays || std>=8)? 'voice' : 'unsure';
+    this.runs.push({t0:(c.t0-this.t0)/1000, t1:(c.t1-this.t0)/1000, midi:mean, std:Math.round(std), kind, line:c.line});
+    if(kind==='voice') this.voiceAt=c.t1; else if(kind==='guitar') this.guitarAt=c.t1;
+    if(this.runs.length>5000) this.runs.shift();
+  },
+  finish(){ if(this.cur){ this.close(this.cur); this.cur=null; } return this.runs.slice(); }
+};
+/* Rango de la melodía con los tramos de voz, pesados por duración (sin los extremos sueltos) */
+function melodyFromRuns(runs){
+  const V=runs.filter(r=>r.kind==='voice' && r.t1-r.t0>=0.12); if(V.length<10) return null;
+  const pts=V.map(r=>({m:r.midi, w:r.t1-r.t0})).sort((a,b)=>a.m-b.m); const tot=pts.reduce((a,b)=>a+b.w,0);
+  const q=p=>{ let acc=0; for(const x of pts){ acc+=x.w; if(acc>=tot*p) return x.m; } return pts[pts.length-1].m; };
+  return {lo:Math.round(q(0.05)), hi:Math.round(q(0.95)), notes:V.length};
+}
 function lev(a,b){ const m=a.length, n=b.length; let p=Array.from({length:n+1},(_,j)=>j);
   for(let i=1;i<=m;i++){ const c=[i]; for(let j=1;j<=n;j++) c[j]=Math.min(p[j]+1, c[j-1]+1, p[j-1]+(a[i-1]===b[j-1]?0:1)); p=c; } return p[n]; }
 
@@ -2019,7 +2124,7 @@ function showTextSheet(){
       const opts=[['letra','Escucha la letra'],['voz','Espera si no canto'],['fijo','Ritmo fijo']].filter(([v])=>v!=='letra'||Follow.supported());
       sh.append(h('div',{class:'field'},'Cómo se desliza al tocar ▶',h('div',{class:'seg'},opts.map(([v,n])=>h('button',{'aria-pressed':String(m===v),onclick:()=>{ prefs.scrollMode=v; savePrefs(); closeSheet(); }},n)))));
       sh.append(h('p',{class:'muted',style:'font-size:13px;margin:0'},
-        m==='letra'? 'Escucha lo que cantás y sigue la letra: espera mientras no cantás y solo avanza. Cuando termina la letra y repetís una parte, sube hasta ahí. Usa el reconocimiento de voz de Chrome, que necesita internet. Al pausar, te muestra en qué tono cantaste y si conviene cambiarlo.'
+        m==='letra'? 'El texto se mueve solo cuando reconoce lo que cantás: en una intro o un solo se queda quieto. Solo avanza; sube únicamente cuando terminó la letra o la letra indica repetir (Estribillo, Coro, Bis). Usa el reconocimiento de voz de Chrome, que necesita internet. Al pausar, te muestra cómo cantaste y si conviene otro tono.'
         : m==='voz'? 'Se desliza a tu ritmo y espera si dejás de cantar más de 4 segundos. Al pausar, te muestra en qué tono cantaste.'
         : 'Se desliza a velocidad constante.'));
     }
@@ -2034,6 +2139,7 @@ function showMoreSheet(){
     o.append(item('Editar','Letra y acordes tocando las palabras, título, artista y género',()=>openSongEditor(s)));
     o.append(item('Pegar letra con acordes','Reemplaza el contenido con un texto copiado de una página',()=>openPasteLyrics(s)));
     o.append(item('Editar como texto','Acordes sobre la letra, en un cuadro de texto',()=>openEditor(s)));
+    o.append(item(s.yt?'Video de YouTube':'Escuchar en YouTube', s.yt?'Cambiar o quitar el video, y medir la melodía de la grabación':'Elegí la versión de YouTube o YouTube Music para escucharla acá',()=>showYtSheet(s)));
     o.append(item('Volver al tono original','Quita transposición y capo',()=>{ s.user.transpose=0; s.user.capo=0; saveSong(s,true); closeSheet(); renderReader(); }));
     if(s.source && s.source.u) o.append(h('a',{class:'opt',href:s.source.u,target:'_blank',rel:'noopener'},h('div',{class:'grow'},h('b',null,'Abrir la fuente'),h('small',{text:s.source.n+(s.source.s?` · ${s.source.s} puntos, ${s.source.v} votos`:'')}))));
     o.append(item('Borrar canción','',()=>{ sh.innerHTML=''; sh.append(h('div',{class:'grab'}),h('h3',{text:'¿Borrar "'+s.title+'"?'}),h('p',{class:'lead'},'Se quita del cancionero en este dispositivo y en tu cuenta.'),
@@ -2531,34 +2637,12 @@ function saveMelody(s, mel){
 /* Lo cantado mientras se deslizaba: se suma a la melodía guardada (sin achicarla si cantaste solo una parte) */
 function registerSung(s, mel){
   const T=s.user.transpose||0; let lo=mel.lo-T, hi=mel.hi-T; const old=s.melody;
+  if(old && old.src==='video') return {prev:old}; // la melodía medida de la grabación manda
   if(old){ const sh=12*Math.round(((old.lo+old.hi)-(lo+hi))/24); lo+=sh; hi+=sh; // misma octava que la medición anterior
-    if(hi-lo < (old.hi-old.lo)-2){ lo=Math.min(lo,old.lo); hi=Math.max(hi,old.hi); } }
+    // promedio con lo anterior: una sola vez cantada no corre todo (ni se va agrandando con cada pausa)
+    lo=Math.round(old.lo*0.5+lo*0.5); hi=Math.round(old.hi*0.5+hi*0.5); }
   s.melody={lo, hi, date:Date.now()}; saveSong(s,true);
   return {prev:old||null};
-}
-function showSungResult(s, mel){
-  const k=songKey(s); const T=s.user.transpose||0; const L=latin();
-  openSheet('Lo que cantaste', sh=>{
-    const z=voiceZone();
-    sh.append(h('div',{class:'stats'},
-      h('div',{class:'stat'},h('small',null,'Cantaste en '+keyName(k,T,L)),h('b',{text:midiName(mel.lo)+' – '+midiName(mel.hi)})),
-      z? h('div',{class:'stat'},h('small',null,'Tu zona cómoda'),h('b',{text:midiName(z.lo)+' – '+midiName(z.hi)})) : null));
-    if(!z){ sh.append(h('p',{class:'lead'},'Guardé la melodía de esta canción. Para saber si el tono te queda cómodo, medí tu voz una vez.'),
-      h('button',{class:'btn primary block',onclick:()=>{ closeSheet(); closeSong(); go('voice','range'); }},'Medir mi voz')); return; }
-    const up=Math.round(mel.hi-z.hi), dn=Math.round(z.lo-mel.lo);
-    sh.append(h('p',{class:'lead'}, up>0&&dn>0? `La melodía es más amplia que tu zona: se pasó ${up} arriba y ${dn} abajo.` : up>0? `Las notas más agudas se pasaron ${up} semitono${up>1?'s':''} de tu zona cómoda.` : dn>0? `Las notas más graves quedaron ${dn} semitono${dn>1?'s':''} por debajo de tu zona cómoda.` : 'Todo lo que cantaste entró en tu zona cómoda.'));
-    const sg=voiceSuggestion(s,true);
-    if(sg && sg.semis!==T){
-      sh.append(h('div',{class:'row'},
-        h('button',{class:'btn primary grow',onclick:()=>{ s.user.voiceT=sg.semis; applyVoiceKey(s, sg.semis, 'sung', mel); }},'Cambiar a '+keyName(k,sg.semis,L)),
-        h('button',{class:'btn grow',onclick:()=>{ s.user.voiceT=T; saveSong(s,true); closeSheet(); toast('Queda en '+keyName(k,T,L)); }},'Dejar en '+keyName(k,T,L))));
-      sh.append(h('p',{class:'muted',style:'font-size:14px'},'Abajo te explico por qué conviene '+keyName(k,sg.semis,L)+'.'));
-      sh.append(explainKey(s, T, sg.semis, 'sung', mel, true));
-    } else {
-      sh.append(h('p',{class:'lead'},keyName(k,T,L)+' es el mejor tono para tu voz en esta canción.'));
-      sh.append(explainKey(s, T, T, 'sung', mel));
-    }
-  });
 }
 /* ---------- Explicaciones: por qué se ajustó el tono, desde la teoría ---------- */
 const INTERVAL_NAMES=['nada','medio tono (1 semitono)','un tono (2 semitonos)','una tercera menor (un tono y medio, 3 semitonos)','una tercera mayor (dos tonos, 4 semitonos)','una cuarta justa (5 semitonos)','un tritono (tres tonos, 6 semitonos)'];
@@ -2595,6 +2679,8 @@ function explainKey(s, fromT, toT, why, sung, proposal){
     P(`Tu zona cómoda va de ${midiName(z.lo)} a ${midiName(z.hi)}, ${spanName(zs)}. `+(span>zs? 'La melodía es más amplia que tu zona, así que algún extremo va a quedar afuera: conviene que sea el que menos aparece.' : 'La melodía entra entera si se ubica bien.'));
     if(d) P(`En ${kf} la cantás entre ${midiName(a.lo)} y ${midiName(a.hi)}${diag(a)}. En ${kt} queda entre ${midiName(b.lo)} y ${midiName(b.hi)}${diag(b)}.`);
     else P(`En ${kt} la cantás entre ${midiName(b.lo)} y ${midiName(b.hi)}${diag(b)}.`);
+    const rows= d? [{lo:a.lo,hi:a.hi,cls:'rB',label:'En '+kf},{lo:b.lo,hi:b.hi,cls:'rA',label:'En '+kt}] : [{lo:b.lo,hi:b.hi,cls:'rA',label:'En '+kt}];
+    wrap.append(legendEl([d?['b','Melodía en '+kf]:null,['a','Melodía en '+kt],['z','Tu zona cómoda']].filter(Boolean)), chartRange(z, rows));
   } else if(z && (why==='estimate' || why==='current')){
     const g=songVoice(s); P(`Todavía no conozco la melodía de esta canción. Supongo que está pensada para una voz ${g==='f'?'femenina':'masculina'} típica, centrada cerca de ${midiName(VOICE_CENTER[g])}, y la muevo hacia el centro de tu zona, ${midiName(z.center)}. Para un cálculo exacto, cantala con «Escucha la letra» o medí la melodía.`);
   }
@@ -2606,6 +2692,9 @@ function explainKey(s, fromT, toT, why, sung, proposal){
     uniq.forEach(c=>{ const deg=degreeName(c,k.pc);
       tb.append(h('tr',null, d? h('td',{text:chordName(c,fromT,ff,L)}) : null, d? h('td',{text:'→'}) : null, h('td',null,h('b',{text:chordName(c,toT,ft,L)})), h('td',{class:'deg',text:deg+(DEG_FUNC[deg]?' · '+DEG_FUNC[deg]:'')}))); });
     wrap.append(tb);
+    const steps=((d*7)%12+12)%12, around=Math.min(steps,12-steps);
+    wrap.append(legendEl([['a','Acordes en '+kt], d?['b','Acordes en '+kf]:null].filter(Boolean)), chartFifths(k, fromT, toT, uniq));
+    P('En el círculo de quintas cada nota está a una quinta de su vecina. Los acordes de una canción suelen quedar juntos: la tónica en el medio, el IV de un lado y el V del otro. '+(d? `Al pasar de ${kf} a ${kt}, el grupo entero gira ${around} lugar${around===1?'':'es'} sin desarmarse: por eso la canción suena igual, en otra altura.` : 'Mirá qué cerca quedan: por eso esos acordes suenan "de la misma familia".'));
     P('El número romano es el grado: el lugar que ocupa el acorde dentro de la tonalidad y la función que cumple. '+(d? 'Al cambiar de tono, cada acorde cambia de nombre pero conserva su grado. La armonía sigue acompañando a la melodía de la misma manera, porque se movió junto con ella.' : 'Si cambiás el tono, los nombres de los acordes cambian pero los grados quedan iguales.'));
   }
   const capo=s.user.capo||0;
@@ -2614,6 +2703,223 @@ function explainKey(s, fromT, toT, why, sung, proposal){
   const n=(prefs.tipN|0)%VOICE_TIPS.length; prefs.tipN=n+1; P(VOICE_TIPS[n]);
   return wrap;
 }
+/* ---------- Cómo cantaste: afinación, tonalidad y acordes ----------
+   Sin acceso al audio de la grabación, la referencia es la música misma: la nota justa más cercana,
+   la escala de la tonalidad y las notas del acorde que suena en ese verso. */
+function chordTonesAt(s, line, T){
+  const e=Scroll.tl[line]; if(!e) return null; const S=dispSections(s); const l=S[+e.el.dataset.si] && S[+e.el.dataset.si].lines[+e.el.dataset.li];
+  const out=new Set(); if(!l) return null;
+  for(const c of (l.chords||[])){ const p=parseChord(c.c); if(!p) continue; for(const iv of (p.q.iv||[0,p.q.third||4,p.q.fifth||7])) out.add(((p.root+T+iv)%12+12)%12); }
+  return out.size? out : null;
+}
+function evalSinging(s, runs, T){
+  const V=runs.filter(r=>r.kind==='voice' && r.t1-r.t0>=0.15); if(V.length<8) return null;
+  const k=songKey(s); const W=r=>r.t1-r.t0;
+  // corrimiento general (por ejemplo, la guitarra afinada un poco baja): la mediana de los desvíos
+  const dev0=V.map(r=>(r.midi-Math.round(r.midi))*100).sort((a,b)=>a-b); const off=Math.round(dev0[Math.floor(dev0.length/2)]);
+  let tot=0, inT=0, inK=0, onC=0, cW=0, absSum=0, sgnSum=0; const hist=new Array(10).fill(0); const byLine=new Map(); const chroma=new Array(12).fill(0);
+  const tonic=k? ((k.pc+T)%12+12)%12 : null; const scale=k? (k.minor? [0,2,3,5,7,8,10,11] : [0,2,4,5,7,9,11]) : null;
+  for(const r of V){ const w=W(r); const x=r.midi-off/100; const note=Math.round(x); const d=(x-note)*100; const pc=((note%12)+12)%12;
+    tot+=w; absSum+=Math.abs(d)*w; sgnSum+=d*w; if(Math.abs(d)<=25) inT+=w; hist[clamp(Math.floor((d+50)/10),0,9)]+=w;
+    if(scale && scale.includes(((pc-tonic)%12+12)%12)) inK+=w;
+    const ct=r.line>=0? chordTonesAt(s, r.line, T) : null; if(ct){ cW+=w; if(ct.has(pc)) onC+=w; }
+    if(k) chroma[((pc-tonic)%12+12)%12]+=w;
+    if(r.line>=0){ const b=byLine.get(r.line)||{w:0,d:0}; b.w+=w; b.d+=d*w; byLine.set(r.line,b); } }
+  const bad=[...byLine.entries()].map(([line,b])=>({line, d:b.d/b.w, w:b.w})).filter(x=>x.w>=1 && Math.abs(x.d)>=22).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d)).slice(0,3);
+  return {inTune:inT/tot, inKey:scale? inK/tot : null, onChord:cW>2? onC/cW : null, off, avg:absSum/tot, mean:sgnSum/tot, hist:hist.map(x=>x/tot), bad, chroma, secs:tot};
+}
+/* parecido entre lo que cantaste y la grabación: compara qué notas de la tonalidad usan las dos (perfil de 12 notas) */
+function chromaSim(a,b){ let ab=0,aa=0,bb=0; for(let i=0;i<12;i++){ ab+=a[i]*b[i]; aa+=a[i]*a[i]; bb+=b[i]*b[i]; } return aa&&bb? ab/Math.sqrt(aa*bb) : 0; }
+
+/* ---------- Gráficos ---------- */
+const SVGNS='http://www.w3.org/2000/svg';
+function sv(tag, attrs, ...kids){ const e=document.createElementNS(SVGNS, tag); for(const k in (attrs||{})) if(attrs[k]!=null) e.setAttribute(k, attrs[k]); kids.flat().forEach(c=>{ if(c==null) return; e.append(typeof c==='string'? document.createTextNode(c) : c); }); return e; }
+function tip(text){ return sv('title',null,text); }
+function legendEl(items){ return h('div',{class:'legend'}, items.map(([cls,txt])=>h('span',null,h('i',{class:'sw '+cls}),txt))); }
+/* Teclado con tu zona cómoda y dónde queda la melodía antes y después del cambio */
+function chartRange(z, rows){
+  const all=[z.lo,z.hi,...rows.flatMap(r=>[r.lo,r.hi])]; const lo=Math.floor(Math.min(...all))-2, hi=Math.ceil(Math.max(...all))+2;
+  const n=hi-lo+1, W=340, padL=6, kw=(W-padL*2)/n, top=8, rowH=22, keyY=top+rows.length*(rowH+6)+18, H=keyY+40;
+  const g=sv('svg',{viewBox:`0 0 ${W} ${H}`, class:'chart', role:'img', 'aria-label':'Tu zona cómoda y el rango de la melodía'});
+  const x=m=>padL+(m-lo)*kw;
+  // zona cómoda: franja detrás de todo
+  g.append(sv('rect',{x:x(z.lo), y:2, width:Math.max(2,x(z.hi+1)-x(z.lo)), height:keyY-4, rx:6, class:'zone'}, tip('Tu zona cómoda: '+midiName(z.lo)+' a '+midiName(z.hi))));
+  g.append(sv('text',{x:x(z.lo)+4, y:keyY-6, class:'zl'},'Tu zona'));
+  rows.forEach((r,i)=>{ const y=top+i*(rowH+6);
+    g.append(sv('rect',{x:x(r.lo)+1, y, width:Math.max(4,x(r.hi+1)-x(r.lo)-2), height:rowH, rx:4, class:r.cls}, tip(r.label+': '+midiName(r.lo)+' a '+midiName(r.hi))));
+    const lbl=r.label+' · '+midiName(r.lo)+'–'+midiName(r.hi); const right=x(r.hi+1)+4; const fits=right+lbl.length*6.2<W;
+    g.append(sv('text',{x: fits? right : x(r.lo)-4, y:y+rowH/2+4, class:'dl', 'text-anchor': fits?'start':'end'}, lbl)); });
+  // teclado
+  for(let m=lo;m<=hi;m++){ const blk=[1,3,6,8,10].includes(((m%12)+12)%12);
+    g.append(sv('rect',{x:x(m)+0.5, y:keyY, width:kw-1, height:blk?16:24, rx:2, class:blk?'kb':'kw'}, tip(midiName(m))));
+    if(((m%12)+12)%12===0) g.append(sv('text',{x:x(m)+kw/2, y:keyY+36, class:'ax','text-anchor':'middle'}, midiName(m))); }
+  return g;
+}
+/* Círculo de quintas: los acordes de la canción quedan juntos; al cambiar de tono, el grupo entero gira */
+function chartFifths(k, fromT, toT, chords){
+  const W=300, H=232, cx=150, cy=116, R=88; const L=latin(); const g=sv('svg',{viewBox:`0 0 ${W} ${H}`, class:'chart', role:'img', 'aria-label':'Círculo de quintas con los acordes de la canción'});
+  g.append(sv('circle',{cx,cy,r:R,class:'ring'}));
+  const roots=d=>new Set(chords.map(c=>((c.root+d)%12+12)%12));
+  const before=roots(fromT), after=roots(toT), tonA=((k.pc+fromT)%12+12)%12, tonB=((k.pc+toT)%12+12)%12, moved=fromT!==toT;
+  for(let i=0;i<12;i++){ const pc=(i*7)%12; const a=-Math.PI/2+i*Math.PI/6; const px=cx+R*Math.cos(a), py=cy+R*Math.sin(a);
+    const isA=after.has(pc), isB=moved && before.has(pc);
+    const grp=sv('g',null, tip(noteName(pc,prefersFlats(pc,false),L)+(isA?' · acorde de la canción ahora':'')+(isB?' · acorde de la canción antes':'')));
+    grp.append(sv('circle',{cx:px, cy:py, r:(pc===tonB||(moved&&pc===tonA))?17:14, class: isA? 'nodeA' : 'node'}));
+    if(isB) grp.append(sv('circle',{cx:px, cy:py, r:20, class:'nodeB'}));
+    grp.append(sv('text',{x:px, y:py+4, 'text-anchor':'middle', class: isA? 'nlA' : 'nl'}, noteName(pc,prefersFlats(pc,false),L)));
+    g.append(grp); }
+  g.append(sv('text',{x:cx, y:cy-4, 'text-anchor':'middle', class:'cl'}, 'Tónica'));
+  g.append(sv('text',{x:cx, y:cy+16, 'text-anchor':'middle', class:'cv'}, keyName(k,toT,L)));
+  return g;
+}
+/* Lo que cantaste en el tiempo: tramos de voz y de guitarra sobre tu zona cómoda */
+function chartContour(runs, z){
+  const R=runs.filter(r=>r.kind!=='unsure'); if(!R.length) return null;
+  const tMax=Math.max(...R.map(r=>r.t1)), tMin=Math.min(...R.map(r=>r.t0));
+  const ms=R.map(r=>r.midi).concat(z? [z.lo,z.hi] : []); const lo=Math.floor(Math.min(...ms))-1, hi=Math.ceil(Math.max(...ms))+1;
+  const W=340, H=170, pl=34, pr=6, pt=6, pb=20; const x=t=>pl+(t-tMin)/Math.max(1,tMax-tMin)*(W-pl-pr), y=m=>pt+(hi-m)/(hi-lo)*(H-pt-pb);
+  const g=sv('svg',{viewBox:`0 0 ${W} ${H}`, class:'chart', role:'img', 'aria-label':'Altura de lo que cantaste a lo largo del tiempo'});
+  if(z) g.append(sv('rect',{x:pl, y:y(z.hi+0.5), width:W-pl-pr, height:y(z.lo-0.5)-y(z.hi+0.5), class:'zone'}, tip('Tu zona cómoda: '+midiName(z.lo)+' a '+midiName(z.hi))));
+  for(let m=Math.ceil(lo);m<=hi;m++) if(((m%12)+12)%12===0||((m%12)+12)%12===7){ g.append(sv('line',{x1:pl, x2:W-pr, y1:y(m), y2:y(m), class:'grid'})); g.append(sv('text',{x:pl-4, y:y(m)+4, 'text-anchor':'end', class:'ax'}, midiName(m))); }
+  g.append(sv('text',{x:pl, y:H-4, class:'ax'}, '0:00')); g.append(sv('text',{x:W-pr, y:H-4, class:'ax','text-anchor':'end'}, fmtTime(tMax-tMin)));
+  for(const r of R){ const isV=r.kind==='voice'; const d=Math.round((r.midi-Math.round(r.midi))*100);
+    g.append(sv('line',{x1:x(r.t0), x2:Math.max(x(r.t0)+3, x(r.t1)), y1:y(r.midi), y2:y(r.midi), class:isV?'segV':'segG'},
+      tip((isV?'Voz':'Guitarra')+' · '+midiName(Math.round(r.midi))+(isV? ' · '+(d>0?'+':'')+d+' cents' : '')))); }
+  return g;
+}
+/* Afinación: cuántas notas cayeron justas y cuántas un poco arriba o abajo */
+function chartHist(hist){
+  const W=340, H=130, pl=6, pr=6, pt=14, pb=22, bw=(W-pl-pr)/hist.length, max=Math.max(...hist,0.01);
+  const g=sv('svg',{viewBox:`0 0 ${W} ${H}`, class:'chart', role:'img', 'aria-label':'Distribución de tu afinación en cents'});
+  g.append(sv('rect',{x:pl+bw*2.5, y:pt-4, width:bw*5, height:H-pt-pb+4, class:'zone'}, tip('Hasta ±25 cents: suena afinado')));
+  hist.forEach((v,i)=>{ const hgt=(H-pt-pb)*v/max; const a=-50+i*10;
+    g.append(sv('rect',{x:pl+i*bw+1, y:H-pb-hgt, width:bw-2, height:Math.max(0,hgt), rx:3, class:'bar'}, tip(`De ${a>0?'+':''}${a} a ${a+10>0?'+':''}${a+10} cents: ${Math.round(v*100)}% del tiempo`))); });
+  g.append(sv('line',{x1:W/2, x2:W/2, y1:pt-6, y2:H-pb, class:'mid'}));
+  [['−50',pl,'start'],['justo',W/2,'middle'],['+50',W-pr,'end']].forEach(([t,xx,a])=>g.append(sv('text',{x:xx, y:H-6, 'text-anchor':a, class:'ax'},t)));
+  g.append(sv('text',{x:pl+2, y:10, class:'ax'},'más bajo')); g.append(sv('text',{x:W-pr-2, y:10, class:'ax','text-anchor':'end'},'más alto'));
+  return g;
+}
+
+/* ---------- Resultado al pausar ---------- */
+function showSungResult(s, mel, runs, ev, T){
+  const k=songKey(s); const L=latin(); T=T==null? (s.user.transpose||0) : T;
+  openSheet('Cómo cantaste', sh=>{
+    const z=voiceZone(); const pct=x=>Math.round(x*100)+'%';
+    sh.append(h('div',{class:'stats'},
+      h('div',{class:'stat'},h('small',null,'Cantaste en '+keyName(k,T,L)),h('b',{text:midiName(mel.lo)+' – '+midiName(mel.hi)})),
+      ev? h('div',{class:'stat'},h('small',null,'Afinación'),h('b',{text:pct(ev.inTune)})) : null,
+      ev && ev.inKey!=null? h('div',{class:'stat'},h('small',null,'En la tonalidad'),h('b',{text:pct(ev.inKey)})) : null,
+      ev && ev.onChord!=null? h('div',{class:'stat'},h('small',null,'Sobre el acorde'),h('b',{text:pct(ev.onChord)})) : null));
+    // lo que cantaste en el tiempo
+    const cc=chartContour(runs, z); if(cc){ sh.append(h('h4',{class:'ch-t'},'Lo que escuchó el micrófono'), legendEl([['v','Tu voz'],['g','Guitarra'],z?['z','Tu zona cómoda']:null].filter(Boolean)), cc,
+      h('p',{class:'muted ch-n'},'Cada raya es una nota sostenida. La app separa la voz de la guitarra: una cuerda se pulsa y se apaga con la afinación quieta, la voz sostiene el sonido y oscila un poco. Para medir tu tono solo usa las rayas de voz.')); }
+    if(ev){
+      sh.append(h('h4',{class:'ch-t'},'Afinación'), chartHist(ev.hist));
+      sh.append(h('div',{class:'why'},
+        h('p',null,`El ${pct(ev.inTune)} del tiempo cantaste a menos de 25 cents de la nota justa. En promedio te desviaste ${Math.round(ev.avg)} cents`+(Math.abs(ev.mean)>=8? `, más bien ${ev.mean<0?'hacia abajo (te quedás un poco corto al llegar a la nota)':'hacia arriba (te pasás un poco)'}.` : ', sin una tendencia marcada.')),
+        h('p',null,'Un cent es la centésima parte de un semitono. Hasta unos 25 cents el oído lo escucha afinado; cerca de 50 ya suena como otra nota.'),
+        Math.abs(ev.off)>=15? h('p',null,`Todo lo que cantaste estuvo corrido ${ev.off>0?'+':''}${ev.off} cents respecto del La 440. Suele pasar cuando la guitarra no está afinada con afinador: la voz se acomoda a la guitarra. Lo descuento para no marcarte notas desafinadas que en realidad estaban bien.`) : null,
+        ev.inKey!=null? h('p',null,`El ${pct(ev.inKey)} de tus notas pertenece a la escala de ${keyName(k,T,L)}. Las notas fuera de la escala no siempre son errores (hay melodías que las usan), pero si son muchas puede ser que te hayas ido de tono.`) : null,
+        ev.onChord!=null? h('p',null,`El ${pct(ev.onChord)} de tus notas coincidió con el acorde que sonaba en ese verso. Las notas del acorde (fundamental, tercera y quinta) son las más estables; las otras notas de la escala son de paso y tienen que resolver en una del acorde.`) : null));
+      if(ev.bad.length){ const S=dispSections(s); const tx=line=>{ const e=Scroll.tl[line]; const l=e && S[+e.el.dataset.si] && S[+e.el.dataset.si].lines[+e.el.dataset.li]; return l && l.lyric? l.lyric.trim().split(/\s+/).slice(0,4).join(' ')+'…' : 'verso '+(line+1); };
+        sh.append(h('div',{class:'why'}, h('p',null,h('b',null,'Para practicar: ')),
+          h('ul',null, ev.bad.map(b=>h('li',null,`«${tx(b.line)}»: ${b.d<0?'un poco bajo':'un poco alto'} (${Math.round(b.d)} cents). `+(b.d<0? 'Pensá la nota "desde arriba" y apoyala con más aire.' : 'Aflojá la garganta: la nota está más cerca de lo que parece.')))))); }
+      if(s.ref && s.ref.chroma && k){ const sim=chromaSim(ev.chroma, s.ref.chroma);
+        let rot=0, bestS=sim; for(let r=1;r<12;r++){ const rc=ev.chroma.map((_,i)=>ev.chroma[(i+r)%12]); const v=chromaSim(rc, s.ref.chroma); if(v>bestS+0.08){ bestS=v; rot=r; } }
+        sh.append(h('h4',{class:'ch-t'},'Comparado con la grabación'), h('div',{class:'why'},
+          h('p',null,`Tus notas coinciden un ${pct(sim)} con las de la grabación, contando qué notas de la tonalidad usa cada una. `+(sim>0.85? 'Cantaste la misma melodía.' : sim>0.65? 'La melodía se parece, pero hay notas distintas: escuchá de nuevo las partes marcadas arriba.' : 'Hay bastantes notas distintas: puede que estés cantando otra versión, o una segunda voz.')),
+          h('p',null,`La grabación va de ${midiName(s.ref.lo)} a ${midiName(s.ref.hi)}; vos la cantaste en ${keyName(k,T,L)}, de ${midiName(mel.lo)} a ${midiName(mel.hi)}.`),
+          rot? h('p',null,'Ojo: lo que cantaste encaja mejor con la grabación corrido '+rot+' semitonos. Puede que la grabación esté en otro tono que los acordes del cancionero.') : null)); }
+    }
+    if(!z){ sh.append(h('p',{class:'lead'},'Para saber si el tono te queda cómodo, medí tu voz una vez.'), h('button',{class:'btn primary block',onclick:()=>{ closeSheet(); closeSong(); go('voice','range'); }},'Medir mi voz')); return; }
+    // tono: solo se propone cambiar si mejora de verdad (más de un semitono afuera de tu zona)
+    const up=Math.round(mel.hi-z.hi), dn=Math.round(z.lo-mel.lo); const sg=voiceSuggestion(s,true);
+    sh.append(h('h4',{class:'ch-t'},'El tono para tu voz'));
+    sh.append(h('p',{class:'lead'}, up>0&&dn>0? `La melodía es más amplia que tu zona: se pasó ${up} arriba y ${dn} abajo.` : up>0? `Las notas más agudas se pasaron ${up} semitono${up>1?'s':''} de tu zona cómoda.` : dn>0? `Las notas más graves quedaron ${dn} semitono${dn>1?'s':''} por debajo de tu zona cómoda.` : 'Todo lo que cantaste entró en tu zona cómoda.'));
+    if(sg && sg.semis!==T && Math.max(up,dn)>=2){
+      sh.append(h('div',{class:'row'},
+        h('button',{class:'btn primary grow',onclick:()=>{ s.user.voiceT=sg.semis; applyVoiceKey(s, sg.semis, 'sung', mel); }},'Cambiar a '+keyName(k,sg.semis,L)),
+        h('button',{class:'btn grow',onclick:()=>{ s.user.voiceT=T; saveSong(s,true); closeSheet(); toast('Queda en '+keyName(k,T,L)); }},'Dejar en '+keyName(k,T,L))));
+      sh.append(explainKey(s, T, sg.semis, 'sung', mel, true));
+    } else {
+      sh.append(h('p',null, Math.max(up,dn)===1? 'Te pasaste apenas un semitono: no vale la pena cambiar el tono por eso, alcanza con apoyar bien esas notas.' : keyName(k,T,L)+' es un buen tono para tu voz en esta canción.'));
+      sh.append(explainKey(s, T, T, 'sung', mel));
+    }
+  });
+}
+
+/* ---------- YouTube: escuchar la canción dentro de la app ----------
+   Usa el reproductor oficial de YouTube: si tenés sesión iniciada en este navegador, se reproduce con tu cuenta.
+   La app no puede leer el audio del video (YouTube no lo permite), por eso para comparar tu voz con la grabación
+   el micrófono escucha la grabación por el parlante una vez ("Medir la melodía de la grabación"). */
+const YT_RE=/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([\w-]{11})/;
+function ytId(t){ const m=String(t||'').match(YT_RE); return m? m[1] : null; }
+const YTP={ api:null, player:null, playing:false,
+  load(){ if(this.api) return this.api;
+    this.api=new Promise(res=>{ if(window.YT && window.YT.Player) return res(window.YT); const prev=window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady=()=>{ if(prev) try{prev();}catch(e){} res(window.YT); };
+      const sc=document.createElement('script'); sc.src='https://www.youtube.com/iframe_api'; sc.onerror=()=>{ this.api=null; res(null); }; document.head.append(sc); setTimeout(()=>res(window.YT&&window.YT.Player? window.YT : null), 12000); });
+    return this.api; },
+  async open(s){
+    this.close(); const box=h('div',{id:'ytBox',class:'ytbox'},
+      h('div',{class:'ytbar'}, h('b',{text:'YouTube'}), h('button',{class:'iconbtn sm','aria-label':'Agrandar o achicar el video',onclick:()=>box.classList.toggle('big')},'⤢'), h('button',{class:'iconbtn sm','aria-label':'Cerrar el video',onclick:()=>this.close()},'✕')),
+      h('div',{class:'ytframe'}, h('div',{id:'ytFrame'})));
+    $('#reader').append(box); box.style.bottom=(($('#reader .dock')||{}).offsetHeight+10||138)+'px';
+    const YT=await this.load(); if(!$('#ytBox')) return;
+    if(!YT){ $('#ytFrame').replaceWith(h('iframe',{src:'https://www.youtube.com/embed/'+s.yt+'?playsinline=1&rel=0', allow:'autoplay; encrypted-media; picture-in-picture', allowfullscreen:'', title:'Video de YouTube'})); return; }
+    this.player=new YT.Player('ytFrame',{videoId:s.yt, playerVars:{playsinline:1, rel:0, modestbranding:1},
+      events:{ onStateChange:e=>{ this.playing=e.data===1; },
+        onError:e=>{ const blocked=e.data===101||e.data===150; const f=$('#ytBox .ytframe'); if(f){ f.innerHTML=''; f.append(h('div',{class:'yterr'}, blocked? 'Quien subió este video no deja reproducirlo fuera de YouTube.' : 'No se pudo cargar el video.', h('a',{class:'btn small',href:'https://music.youtube.com/watch?v='+s.yt,target:'_blank',rel:'noopener'},'Abrir en YouTube Music'), h('button',{class:'btn small ghost',onclick:()=>showYtSheet(s)},'Elegir otro video'))); } } } });
+  },
+  close(){ if(this.player){ try{ this.player.destroy(); }catch(e){} } this.player=null; this.playing=false; const b=$('#ytBox'); if(b) b.remove(); }
+};
+function showYtSheet(s){
+  openSheet('Escuchar la canción', sh=>{
+    const q=encodeURIComponent(s.title+' '+(s.artist||''));
+    const inp=h('input',{type:'url', placeholder:'Pegá el link de YouTube o YouTube Music', value:s.yt? 'https://music.youtube.com/watch?v='+s.yt : '', 'aria-label':'Link del video'});
+    const save=()=>{ const id=ytId(inp.value); if(!id){ toast('Ese link no es de un video de YouTube'); return; } s.yt=id; saveSong(s,true); closeSheet(); renderReader(); YTP.open(s); };
+    sh.append(h('p',{class:'lead',style:'margin:0'},'Elegí la versión que querés escuchar. Si en este navegador tenés tu cuenta de YouTube abierta, se reproduce con tu cuenta.'));
+    sh.append(h('div',{class:'row'},
+      h('a',{class:'btn small',href:'https://music.youtube.com/search?q='+q,target:'_blank',rel:'noopener'},'Buscar en YouTube Music'),
+      h('a',{class:'btn small ghost',href:'https://www.youtube.com/results?search_query='+q,target:'_blank',rel:'noopener'},'Buscar en YouTube')));
+    sh.append(h('p',{class:'muted',style:'font-size:14px;margin:0'},'En el celular: en YouTube Music tocá Compartir y elegí Cancionero; la app lo asocia sola a esta canción. También podés copiar el link y pegarlo acá.'));
+    sh.append(h('div',{class:'row'}, inp, h('button',{class:'btn primary',onclick:save},'Usar')));
+    if(s.yt) sh.append(h('div',{class:'row'}, h('button',{class:'btn',onclick:()=>{ closeSheet(); YTP.open(s); }},'Abrir el reproductor'), h('button',{class:'btn ghost',onclick:()=>{ delete s.yt; saveSong(s,true); YTP.close(); closeSheet(); renderReader(); }},'Quitar el video')));
+    sh.append(h('div',{class:'field'},'¿Escuchás la grabación con auriculares?',
+      h('div',{class:'seg'},[[true,'Sí'],[false,'No, por el parlante']].map(([v,n])=>h('button',{'aria-pressed':String(!!prefs.headphones===v),onclick:()=>{ prefs.headphones=v; savePrefs(); closeSheet(); showYtSheet(s); }},n)))));
+    sh.append(h('p',{class:'muted',style:'font-size:14px;margin:0'}, prefs.headphones? 'Con auriculares el micrófono escucha solo tu voz: podés cantar arriba de la grabación y al pausar te digo cómo cantaste.' : 'Por el parlante, el micrófono escucha la grabación y tu voz mezcladas: la letra se sigue igual, pero tu afinación solo la evalúo cuando cantás sin la grabación.'));
+    if(s.yt) sh.append(h('div',{class:'card stack',style:'gap:8px'}, h('b',null,'Medir la melodía de la grabación'),
+      h('p',{class:'muted',style:'margin:0;font-size:14px'},'Poné el video por el parlante, sin cantar, y dejá que la app lo escuche un minuto. Guarda el rango de la melodía original y qué notas usa: con eso calcula tu tono y después compara lo que cantás con la grabación. Funciona mejor si la voz se escucha clara en la mezcla.'),
+      refMeasureUI(s)));
+  });
+}
+/* escuchar la grabación por el micrófono y quedarse con la voz principal */
+function refMeasureUI(s){
+  const msg=h('p',{class:'micnote',style:'text-align:left;margin:0'}); const btn=h('button',{class:'btn primary'},'Escuchar la grabación');
+  btn.addEventListener('click', async ()=>{
+    if(Mic.active){ Mic.stop(); btn.textContent='Escuchar la grabación'; const runs=Sing.finish(); const mel=melodyFromRuns(runs);
+      if(!mel){ msg.textContent='No llegué a distinguir la voz de la grabación. Subí el volumen y dejala sonar un poco más.'; return; }
+      const k=songKey(s); const chroma=new Array(12).fill(0); for(const r of runs) if(r.kind==='voice' && k){ const pc=((Math.round(r.midi)%12)+12)%12; chroma[((pc-k.pc)%12+12)%12]+=r.t1-r.t0; }
+      s.ref={lo:mel.lo, hi:mel.hi, chroma, date:Date.now()}; s.melody={lo:mel.lo, hi:mel.hi, date:Date.now(), src:'video'}; delete s.user.voiceT; saveSong(s,true);
+      closeSheet(); renderReader(); toast('Melodía de la grabación guardada: '+midiName(mel.lo)+' a '+midiName(mel.hi), 4000); return; }
+    Sing.reset(); Sing.lineAt=null; if(!YTP.player) YTP.open(s);
+    const ok=await Mic.start((r,now)=>Sing.push(r,now), ()=>micFail(msg));
+    if(ok){ btn.textContent='Listo, terminé'; msg.textContent='Dale play al video y dejalo sonar por el parlante. Tocá "Listo" después del primer estribillo.'; }
+  });
+  return h('div',{class:'stack',style:'gap:6px'}, h('div',{class:'row'},btn), msg);
+}
+/* un video compartido desde YouTube Music: se asocia a la canción con ese título */
+function assignShared(id, text){
+  const t=norm(text.replace(/https?:\/\/\S+/g,' ')); let best=null;
+  for(const s of LIB){ const nt=norm(s.title); if(nt.length<3) continue; if(t.includes(nt)){ const sc=nt.length+(s.artist && t.includes(norm(s.artist))? 20 : 0); if(!best||sc>best.sc) best={s,sc}; } }
+  const attach=s=>{ s.yt=id; saveSong(s,true); openSong(s); setTimeout(()=>YTP.open(s),300); toast('Video asociado a «'+s.title+'»'); };
+  if(best) return attach(best.s);
+  openSheet('¿De qué canción es este video?', sh=>{
+    const list=h('div',{class:'opts'}); const f=h('input',{type:'search',placeholder:'Buscar canción','aria-label':'Buscar canción'});
+    const draw=()=>{ list.innerHTML=''; const q=norm(f.value); LIB.filter(s=>!q || norm(s.title+' '+s.artist).includes(q)).slice(0,30).forEach(s=>list.append(h('button',{class:'opt',onclick:()=>{ closeSheet(); attach(s); }},h('div',{class:'grow'},h('b',{text:s.title}),h('small',{text:s.artist||''}))))); };
+    f.addEventListener('input',draw); sh.append(f, list); draw();
+  });
+}
+
 /* Cambia el tono por un motivo de voz y muestra la explicación */
 function applyVoiceKey(s, toT, why, sung){
   const from=s.user.transpose||0; s.user.transpose=toT;
@@ -3235,6 +3541,7 @@ function handleIncoming(){
     const m=location.hash.match(/^#add=(.+)$/); if(m){ try{ txt=decodeURIComponent(m[1]); }catch(e){ txt=m[1]; } }
     if(!txt) return;
     history.replaceState(null,'',location.pathname);
+    const yid=ytId(txt); if(yid && txt.replace(/https?:\/\/\S+/g,'').trim().length<160){ setTimeout(()=>assignShared(yid, txt), 200); return; }
     if(txt.trim().length>40){ const parts=splitSongs(txt); setTimeout(()=>quickSave((parts.length?parts:[txt]).map(p=>textToImport(p))), 150); }
     else toast('Lo que llegó no tenía letra con acordes. Seleccioná el texto de la canción antes de compartir.', 5000);
   }catch(e){}
