@@ -880,7 +880,11 @@ function isTabLine(s){ const t=s.trim(); return /^[eBGDAEbgda]?\s*[|:]?[-\d|hpbr
 /* ---------- Limpieza de texto copiado de páginas web ----------
    Saca caracteres invisibles y los textos de menús/botones, y se queda con la
    zona que más se parece a una canción (acordes, letra y tablaturas). */
-const JUNK_RE=/^(descargar|imprimir|compartir|guardar|favorit|comentari|ver m[aá]s|mostrar|ocultar|restablecer|principal|letra$|tabs?( pro)?$|tablaturas?$|cifrado$|simplificar|auto ?scroll|desplazamiento|transponer|tono:?$|afinaci[oó]n:?|aprend|videoclase|video ?lecci|enviar|corregir|denunciar|publicidad|anuncio|suscrib|iniciar sesi|registr|men[uú]$|buscar|inicio$|home$|siguiente|anterior|volver|cerrar|aceptar|cookies|pol[ií]tica|t[eé]rminos|copyright|©|todos los derechos|escuchar|reproducir|play$|\d+ (comentarios|visitas|vistas)|valorar|puntuar|calificaci[oó]n|opiniones|colabor|env[ií]anos|otras canciones|canciones de |acordes de |m[aá]s canciones|relacionad|popular|top \d|ranking)/i;
+/* Solo se descarta una línea si es EXACTAMENTE un texto de menú o botón (nunca por empezar con una
+   palabra parecida: "Volveré" no es el botón "Volver"). */
+const JUNK_EXACT=/^(?:descargar(?: acordes| pdf| cifra)?|imprimir|compartir|guardar|favoritos?|agregar a favoritos|comentarios?(?: \(\d+\))?|ver m[aá]s|mostrar(?: siempre)?|ocultar|restablecer(?: ajustes)?|men[uú](?: principal)?|principal|letra|tabs?(?: pro)?|tablaturas?|cifrado|simplificar(?: cifra)?|auto ?scroll|desplazamiento(?: autom[aá]tico)?|transponer|tono|afinaci[oó]n|videoclase|video ?lecci[oó]n|enviar(?: correcci[oó]n| tu versi[oó]n)?|corregir|denunciar|publicidad|anuncio|suscribirse|iniciar sesi[oó]n|registrarse|buscar|inicio|home|siguiente|anterior|volver|cerrar|aceptar(?: cookies)?|cookies|escuchar|reproducir|play|valorar|puntuar|calificaci[oó]n|opiniones|colabora con nosotros|otras canciones|m[aá]s canciones|canciones relacionadas|popular(?:es)?|ranking)\s*:?$/i;
+const JUNK_PREFIX=/^(?:\d+ (?:comentarios|visitas|vistas|opiniones)\b|todos los derechos|copyright\b|©|pol[ií]tica de (?:privacidad|cookies)|t[eé]rminos (?:de uso|y condiciones)|otras canciones de |m[aá]s canciones de |acordes de .{1,40} \(|¡?colabora con nosotros|env[ií]anos tu versi[oó]n)/i;
+const JUNK_RE={ test:t=>JUNK_EXACT.test(t.trim())||JUNK_PREFIX.test(t.trim()) };
 function lineKind(l){
   const t=l.trim(); if(!t) return 'blank';
   if(isTabLine(l)) return 'tab';
@@ -1974,6 +1978,7 @@ function pageTitleMeta(t){
   t=String(t||'').trim(); let m;
   if((m=t.match(/^(.+?)\s*\((?:acordes|letra|tab|tablatura|cifra|chords)[^)]*\)\s*[-–|]\s*(.+?)(?:\s*[-–|]\s*(?:cifra ?club|lacuerda.*|ultimate.*))?$/i))) return {title:titleCase(m[1]), artist:m[2].trim()};
   if((m=t.match(/^(.+?):\s*(?:acordes|letra|tab)[^(]*\((.+)\)\s*$/i))) return {title:titleCase(m[1]), artist:m[2].trim()};
+  if((m=t.match(/^(.+?),\s*(.+?):\s*(?:acordes|letra|tablatura|tab)\b/i))) return {title:titleCase(m[1]), artist:m[2].trim()};
   if((m=t.match(/^(.+?)\s+[-–]\s+(.+?)\s*[-–|]\s*(?:acordes|letra|chords|cifra ?club|lacuerda)/i))) return {title:titleCase(m[1]), artist:m[2].trim()};
   return null;
 }
@@ -2794,7 +2799,7 @@ function openSettings(){
     drawGh(); sh.append(ghCard);
     // atajos para capturar canciones de páginas web
     const appUrl=location.origin+location.pathname;
-    const bm="javascript:(function(){var P=[].slice.call(document.querySelectorAll('pre,#t_body,.cifra_cnt,.cifra,.letra,.chords,.tab-content,article'));var best='',bs=0;P.forEach(function(p){var t=(p.innerText||'').trim();if(t.length<40)return;var s=(t.match(/(^|\\s)[A-G](#|b)?(m|maj|min|dim|aug|sus|add|M)?\\d?(\\/[A-G](#|b)?)?(?=\\s|$)/g)||[]).length*5+Math.min(t.length,4000)/200;if(s>bs){bs=s;best=t;}});var sel=String(window.getSelection&&window.getSelection());if(sel.length>60)best=sel;if(!best){alert('No encontré la canción en esta página. Seleccioná el texto con los acordes y volvé a tocar el atajo.');return;}var h1=document.querySelector('h1');var title=(h1&&h1.innerText.trim())||document.title.split(/[|\\-–:]/)[0].trim();var a=document.querySelector('h2 a, h2, .artist, .t1 a, [itemprop=byArtist], .autor');var artist=a?a.innerText.trim():'';var txt=title+'\\n'+artist+'\\n\\n'+best;window.open('"+appUrl+"#add='+encodeURIComponent(txt),'_blank');})();";
+    const bm="javascript:(function(){var P=[].slice.call(document.querySelectorAll('pre,#t_body,.cifra_cnt,.cifra,.letra,.chords,.tab-content,article'));var best='',bs=0;P.forEach(function(p){var t=(p.innerText||'').trim();if(t.length<40)return;var s=(t.match(/(^|\\s)[A-G](#|b)?(m|maj|min|dim|aug|sus|add|M)?\\d?(\\/[A-G](#|b)?)?(?=\\s|$)/g)||[]).length*5+Math.min(t.length,4000)/200;if(s>bs){bs=s;best=t;}});var sel=String(window.getSelection&&window.getSelection());if(sel.length>60)best=sel;if(!best){alert('No encontré la canción en esta página. Seleccioná el texto con los acordes y volvé a tocar el atajo.');return;}var title=document.title.trim();var artist='';var txt=title+'\\n'+artist+'\\n\\n'+best;window.open('"+appUrl+"#add='+encodeURIComponent(txt),'_blank');})();";
     sh.append(h('div',{class:'card stack',style:'gap:8px'}, h('b',null,'Traer canciones de una página en un toque'),
       h('p',{class:'muted',style:'margin:0;font-size:14px'},h('b',null,'En la compu: '),'arrastrá este botón a la barra de favoritos. Después, en cualquier página de acordes (LaCuerda, CifraClub, Satori…), tocá el favorito y la canción se abre guardada en la app.'),
       h('div',{class:'row'}, h('a',{class:'btn warm',href:bm,onclick:e=>{ e.preventDefault(); toast('Arrastralo a la barra de favoritos (no hace falta hacer clic)'); },draggable:'true'},'♪ Guardar en Cancionero'),
